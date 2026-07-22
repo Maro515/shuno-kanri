@@ -370,11 +370,6 @@
   .hist-body .sub2 { font-size:11.5px; color:var(--sub); margin-top:1px; }
   .hist-time { font-size:11.5px; color:var(--sub); white-space:nowrap; }
 
-  /* ---------- backup ---------- */
-  .bk-note { font-size:13px; color:var(--sub); line-height:1.7; margin-bottom:14px; }
-  .bk-warn { color:var(--rose); font-weight:600; }
-  #import-file { display:none; }
-
   /* ---------- toast ---------- */
   #toast {
     position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom));
@@ -431,7 +426,7 @@
       <button class="clear" id="search-clear" onclick="clearSearch()">✕</button>
     </div>
     <button class="hd-btn" onclick="openHistory()">🕘 履歴</button>
-    <button class="hd-btn" onclick="openBackup()">💾 保存</button>
+    <button class="hd-btn" onclick="exportExcel()">📊 Excel</button>
     <button class="hd-btn" id="hd-logout" onclick="doLogout()" title="ログアウト">⏻</button>
   </div>
 </header>
@@ -555,29 +550,6 @@
   </div>
 </div>
 
-<!-- backup modal -->
-<div class="modal-bg" id="m-backup">
-  <div class="modal">
-    <h2>💾 バックアップ</h2>
-    <div class="bk-note" id="bk-status"></div>
-    <div class="btn-row">
-      <button class="btn primary" onclick="exportBackup()">⬇ バックアップを書き出す</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn ghost" onclick="document.getElementById('import-file').click()">⬆ バックアップから復元する</button>
-      <input type="file" id="import-file" accept=".json,application/json">
-    </div>
-    <div class="bk-note" style="margin-top:14px">
-      書き出したファイルは iPad の「ファイル」アプリ（iCloud Drive など）に保存されます。
-      定期的に書き出しておくと、iPad の故障・紛失時にも復元できます。<br>
-      <span class="bk-warn">※ 復元すると現在のデータはすべて置き換わります。</span>
-    </div>
-    <div class="btn-row">
-      <button class="btn ghost" onclick="closeModal('m-backup')">閉じる</button>
-    </div>
-  </div>
-</div>
-
 <div id="toast"></div>
 
 <!-- login overlay -->
@@ -617,7 +589,6 @@ const firebaseConfig = {
 const COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'];
 const ROWS = [1,2,3,4,5,6,7,8,9];
 const SUB = 9;
-const LS_EXPORT = 'shuno-kanri-last-export';
 
 // Firestore が正。state は各端末のミラー（onSnapshot で更新される）
 let state = { items: {}, labels: {} };
@@ -1056,89 +1027,81 @@ function openHistory() {
 }
 
 /* ================= backup ================= */
-function openBackup() {
-  const n = Object.keys(state.items).length;
-  const last = localStorage.getItem(LS_EXPORT);
-  let s = `現在 ${n} 品をクラウドに保存し、全端末で共有しています。<br>`;
-  if (last) {
-    const days = Math.floor((Date.now() - (+last)) / 86400000);
-    s += `この端末での前回の書き出し: ${fmtDate(+last)}`;
-    if (days >= 30) s += ` <span class="bk-warn">（${days}日前）</span>`;
-  } else {
-    s += 'この端末からはまだ書き出していません。';
-  }
-  document.getElementById('bk-status').innerHTML = s;
-  openModal('m-backup');
+/* ================= Excel export ================= */
+function ensureXLSX() {
+  return new Promise((resolve, reject) => {
+    if (window.XLSX) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('xlsx load failed'));
+    document.head.appendChild(s);
+  });
 }
 
-function exportBackup() {
-  const finish = (history) => {
+function exportExcel() {
+  if (Object.keys(state.items).length === 0) { showToast('収納中の品がありません'); return; }
+  showToast('Excelを準備しています…');
+  ensureXLSX().then(() => {
+    const wb = buildExcelWorkbook();
     const d = new Date();
     const p = n => String(n).padStart(2, '0');
-    const fname = `収納バックアップ-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.json`;
-    const blob = new Blob([JSON.stringify({ exportedAt: Date.now(), items: state.items, labels: state.labels, history }, null, 1)],
-                          { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = fname;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-    localStorage.setItem(LS_EXPORT, String(Date.now()));
-    openBackup();
-    showToast('バックアップを書き出しました');
-  };
-  if (!db) { finish([]); return; }
-  showToast('バックアップを準備しています…');
-  db.collection('history').orderBy('ts', 'desc').limit(1000).get()
-    .then(snap => { const h = []; snap.forEach(d => h.push(d.data())); finish(h); })
-    .catch(() => finish([]));
+    const fname = `収納状況-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    showToast('Excelを書き出しました');
+  }).catch(() => showToast('Excel機能を読み込めませんでした（通信環境をご確認ください）'));
 }
 
-document.getElementById('import-file').addEventListener('change', function () {
-  const f = this.files[0];
-  this.value = '';
-  if (!f) return;
-  if (!db) { alert('ログインしてから復元してください。'); return; }
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const obj = JSON.parse(reader.result);
-      if (!obj || typeof obj.items !== 'object') { alert('バックアップファイルの形式が正しくありません。'); return; }
-      const n = Object.keys(obj.items).length;
-      if (!confirm(`このバックアップの ${n} 品を、共有データに復元します（同じ場所は上書き）。よろしいですか？`)) return;
-      restoreToFirestore(obj);
-      closeModal('m-backup');
-    } catch (e) {
-      alert('ファイルを読み込めませんでした。');
-    }
-  };
-  reader.readAsText(f);
-});
+/* 現在の保管状況を workbook 化：先頭に「一覧」、以降は品物のある区画ごとに1シート */
+function buildExcelWorkbook() {
+  const items = [];
+  for (const k in state.items) {
+    const p = parseKey(k);
+    items.push(Object.assign({}, p, state.items[k]));
+  }
+  const secIndex = s => { const [L, n] = s.split('-'); return COLS.indexOf(L) * 9 + (+n - 1); };
+  items.sort((a, b) => secIndex(a.sec) - secIndex(b.sec) || a.r - b.r || a.c - b.c);
 
-/* バックアップ内容を Firestore に書き戻す（マス単位・最大400件ずつ） */
-function restoreToFirestore(obj) {
-  const ops = [];
-  Object.keys(obj.items || {}).forEach(k => {
-    const parts = k.split(':'); const sec = parts[0], r = +parts[1], c = +parts[2];
-    if (!sec || !r || !c) return;
-    const d = obj.items[k] || {};
-    ops.push([itemRef(sec, r, c), {
-      sec, r, c, name: d.name || '', qty: d.qty || 1, note: d.note || '',
-      addedAt: d.addedAt || Date.now(), addedBy: d.addedBy || (currentUser ? currentUser.email : '')
-    }]);
+  const wb = XLSX.utils.book_new();
+
+  // ① 一覧シート
+  const overview = [['区画', '名前', '段', '列', '品名', '数量', '収納日', '収納者']];
+  items.forEach(it => {
+    overview.push([
+      it.sec, state.labels[it.sec] || '', it.r, it.c, it.name,
+      it.qty || 1,
+      it.addedAt ? fmtDate(it.addedAt) : '',
+      it.addedBy ? String(it.addedBy).split('@')[0] : ''
+    ]);
   });
-  Object.keys(obj.labels || {}).forEach(sec => {
-    ops.push([db.collection('labels').doc(sec), { name: obj.labels[sec] }]);
-  });
-  const itemCount = Object.keys(obj.items || {}).length;
-  let i = 0;
-  (function next() {
-    if (i >= ops.length) { showToast(`復元しました（${itemCount} 品）`); return; }
-    const batch = db.batch();
-    ops.slice(i, i + 400).forEach(([ref, data]) => batch.set(ref, data));
-    i += 400;
-    batch.commit().then(next).catch(() => showToast('復元中にエラーが発生しました'));
-  })();
+  const wsOv = XLSX.utils.aoa_to_sheet(overview);
+  wsOv['!cols'] = [{ wch: 6 }, { wch: 12 }, { wch: 5 }, { wch: 5 }, { wch: 20 }, { wch: 6 }, { wch: 12 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, wsOv, '一覧');
+
+  // ② 区画ごとのシート（品物のある区画のみ、物理順 A-1→A-9→B-1…）
+  for (const L of COLS) for (const n of ROWS) {
+    const sec = `${L}-${n}`;
+    const cells = items.filter(it => it.sec === sec);
+    if (cells.length === 0) continue;
+    const map = {};
+    cells.forEach(it => { map[`${it.r}:${it.c}`] = it; });
+    const label = state.labels[sec];
+    const grid = [];
+    grid.push([`区画 ${sec}${label ? '（' + label + '）' : ''}`]);
+    grid.push(['段＼列', 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    for (let r = 1; r <= SUB; r++) {
+      const row = [`${r}段`];
+      for (let c = 1; c <= SUB; c++) {
+        const it = map[`${r}:${c}`];
+        row.push(it ? (it.qty > 1 ? `${it.name} ×${it.qty}` : it.name) : '');
+      }
+      grid.push(row);
+    }
+    const ws = XLSX.utils.aoa_to_sheet(grid);
+    ws['!cols'] = [{ wch: 7 }].concat(Array(9).fill({ wch: 12 }));
+    XLSX.utils.book_append_sheet(wb, ws, sec);
+  }
+  return wb;
 }
 
 /* ================= common ui ================= */
@@ -1242,7 +1205,7 @@ function doLogout() {
   if (!auth || !currentUser) return;
   if (!confirm('ログアウトしますか？')) return;
   cancelMove();
-  ['m-form', 'm-detail', 'm-label', 'm-history', 'm-backup'].forEach(closeModal);
+  ['m-form', 'm-detail', 'm-label', 'm-history'].forEach(closeModal);
   currentSec = null;
   auth.signOut();
 }
