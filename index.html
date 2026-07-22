@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>区画収納管理</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#f3f6f9">
+<style>
+  :root {
+    --bg: #f3f6f9;
+    --panel: linear-gradient(180deg, #ffffff, #f7fafc);
+    --glass: rgba(255,255,255,.72);
+    --line: rgba(18,56,94,.16);
+    --line2: rgba(18,56,94,.08);
+    --ink: #17293b;
+    --sub: #65798d;
+    --acc: #0da678;
+    --acc-dim: rgba(16,185,129,.13);
+    --amber: #9a7b00;
+    --amber-dim: rgba(255,203,40,.18);
+    --rose: #e11d48;
+    --rose-dim: rgba(225,29,72,.10);
+    --orange: #d97706;
+    --orange-dim: rgba(217,119,6,.12);
+    --shadow: 0 8px 26px rgba(30,60,90,.10);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { height:100%; }
+  body {
+    font-family: -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
+    background: var(--bg); color: var(--ink);
+    touch-action: manipulation;
+    font-variant-numeric: tabular-nums;
+  }
+  /* fixed aurora backdrop (iOS-safe alternative to background-attachment:fixed) */
+  body::before {
+    content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(1100px 700px at 85% -10%, rgba(56,152,224,.13), transparent 60%),
+      radial-gradient(950px 700px at -10% 108%, rgba(16,185,129,.11), transparent 55%),
+      var(--bg);
+  }
+  button { font-family: inherit; touch-action: manipulation; }
+  /* iPad: no text selection / long-press callout on tap targets */
+  button, .hd-title, .ov-sec, .ov-ct-head, .sub-cell, .sr-row, .sec-list .row, .stat {
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  ::selection { background: rgba(16,185,129,.25); }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb { background:rgba(18,56,94,.20); border-radius:6px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  @keyframes pop { from { opacity:0; transform:translateY(18px) scale(.96); } to { opacity:1; transform:none; } }
+  #view-home, #view-section { animation: fadeUp .28s ease both; }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky; top:0; z-index:30;
+    background: rgba(255,255,255,.78);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6);
+    border-bottom: 1px solid var(--line2);
+    padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+  }
+  .hd-row { display:flex; align-items:center; gap:10px; padding:10px 0; }
+  .hd-title {
+    font-size:17px; font-weight:800; letter-spacing:.04em; white-space:nowrap; cursor:pointer;
+    display:flex; align-items:center; gap:8px;
+  }
+  .hd-title .logo {
+    width:30px; height:30px; border-radius:9px;
+    background:linear-gradient(135deg, #10b981, #0ea5e9);
+    color:#fff; font-weight:800;
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+    box-shadow:0 4px 14px rgba(16,185,129,.35);
+  }
+  .searchbox { flex:1; position:relative; min-width:120px; }
+  .searchbox input {
+    width:100%; height:46px; border:1.5px solid var(--line); border-radius:12px;
+    padding: 0 40px 0 38px; font-size:16px; background:#fff; color:var(--ink);
+    outline:none; -webkit-appearance:none; appearance:none;
+  }
+  .searchbox input::placeholder { color:#93a5b7; }
+  .searchbox input:focus {
+    border-color: var(--acc); background:#fff;
+    box-shadow:0 0 0 3px rgba(16,185,129,.18);
+  }
+  .searchbox .mag { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--sub); font-size:16px; pointer-events:none; }
+  .searchbox .clear {
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; border:none; border-radius:50%; background:#e9eef3;
+    color:var(--sub); font-size:15px; cursor:pointer; display:none;
+  }
+  .hd-btn {
+    height:46px; padding:0 15px; border:1px solid var(--line); border-radius:12px;
+    background:#fff; color:var(--ink); font-size:14px; font-weight:600;
+    cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;
+  }
+  .hd-btn:active { background:#eef2f6; }
+
+  /* ---------- move banner ---------- */
+  #move-banner {
+    display:none; position:sticky; top:calc(66px + env(safe-area-inset-top)); z-index:29;
+    background:linear-gradient(90deg, rgba(197,110,31,.92), rgba(224,142,46,.92));
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    color:#fff; padding:10px 14px;
+    font-size:14px; font-weight:600;
+    align-items:center; justify-content:space-between; gap:10px;
+    box-shadow:0 6px 20px rgba(224,142,46,.25);
+  }
+  #move-banner button {
+    border:1.5px solid rgba(255,255,255,.7); background:transparent; color:#fff;
+    border-radius:9px; padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+
+  main {
+    padding: 14px max(12px, env(safe-area-inset-right)) calc(34px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    max-width:1220px; margin:0 auto;
+  }
+
+  /* ---------- home ---------- */
+  .stats {
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;
+  }
+  .stat {
+    background:var(--glass); border:1px solid var(--line2); border-radius:14px;
+    box-shadow:var(--shadow);
+    padding:12px 18px; display:flex; align-items:baseline; gap:8px;
+  }
+  .stat b {
+    font-size:26px; font-weight:800;
+    background:linear-gradient(135deg, #0ca678, #0f9d6f 45%, #0a86c9);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .stat span { font-size:13px; color:var(--sub); }
+  .hint { color:var(--sub); font-size:14px; margin:4px 2px 12px; }
+
+  .ov-wrap { overflow-x:auto; background:var(--glass); border:1px solid var(--line2); border-radius:18px; padding:14px; }
+  .ov-cols {
+    display:grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap:10px;
+    min-width: 720px;
+  }
+  .ov-col { display:flex; flex-direction:column; gap:10px; }
+  .ov-container {
+    border:1px solid var(--line2); border-radius:14px; background:var(--panel);
+    overflow:hidden; box-shadow:0 6px 18px rgba(30,60,90,.10);
+  }
+  .ov-ct-head {
+    background:linear-gradient(135deg, #24405e, #1a3049); color:#fff; padding:8px 11px;
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:1px solid var(--line2);
+  }
+  .ov-ct-head .letter {
+    font-size:18px; font-weight:900; letter-spacing:.10em;
+    text-shadow:0 0 14px rgba(110,231,183,.45);
+  }
+  .ov-ct-head .used { font-size:11.5px; color:#b9c9da; font-weight:600; }
+  .ov-sec {
+    display:flex; align-items:center; gap:6px; padding:0 9px;
+    min-height:46px; border-top:1px solid var(--line2); cursor:pointer; background:transparent;
+  }
+  .ov-sec:active { background:#eef2f6; }
+  .ov-sec .n { font-size:12.5px; color:#8296aa; font-weight:700; min-width:13px; }
+  .ov-sec .lb {
+    flex:1; font-size:13px; font-weight:700; color:#1c4f3d;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .ov-sec .ct {
+    font-size:12.5px; font-weight:800; color:#0a8a63; white-space:nowrap;
+    background:var(--acc-dim); border-radius:999px; padding:3px 9px;
+  }
+  .ov-sec.empty { background:linear-gradient(90deg, var(--amber-dim), transparent 70%); }
+  .ov-sec.empty:active { background:rgba(255,203,40,.30); }
+  .ov-sec.empty .ct { color:var(--amber); background:var(--amber-dim); font-weight:700; }
+  .ov-sec.empty .lb { color:#8a7420; }
+  .ov-space {
+    flex:1; min-height:160px; border:2px dashed var(--line); border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    color:#a5b4c4; font-size:13.5px; font-weight:600; text-align:center; line-height:1.6;
+  }
+
+  /* ---------- section view ---------- */
+  .sec-bar { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .sec-bar .back {
+    height:44px; padding:0 16px; border:1px solid var(--line); border-radius:12px; background:#fff;
+    font-size:14.5px; font-weight:600; color:var(--ink); cursor:pointer;
+  }
+  .sec-bar .back:active { background:#eef2f6; }
+  .sec-title {
+    font-size:22px; font-weight:900; letter-spacing:.06em;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .sec-count { font-size:13.5px; color:var(--sub); }
+  .sec-label {
+    border:1px solid rgba(16,185,129,.35); border-radius:999px; background:var(--acc-dim);
+    padding:6px 14px; font-size:13.5px; font-weight:700; color:#0a8a63; cursor:pointer;
+  }
+  .sec-label.unset { color:var(--sub); background:#fff; border-color:var(--line); font-weight:600; }
+  .sec-label:active { background:#eef2f6; }
+  .sec-nav { margin-left:auto; display:flex; gap:8px; }
+  .sec-nav button {
+    width:48px; height:44px; border:1px solid var(--line); border-radius:12px;
+    background:#fff; font-size:16px; color:var(--ink); cursor:pointer;
+  }
+  .sec-nav button:active { background:#eef2f6; }
+  .sub-wrap { background:var(--glass); border:1px solid var(--line2); border-radius:18px; padding:14px; }
+  .sub-grid {
+    display:grid;
+    grid-template-columns: 26px repeat(9, 1fr);
+    gap:4px;
+  }
+  .sub-head {
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:var(--sub);
+    background:#eaf0f5; border-radius:7px; min-height:26px;
+  }
+  .sub-cell {
+    border:1.5px dashed var(--line); border-radius:10px; background:rgba(255,255,255,.55);
+    min-height:66px; cursor:pointer; padding:4px 3px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    overflow:hidden; transition: transform .05s;
+  }
+  .sub-cell:active { transform:scale(.94); }
+  .sub-cell .plus { color:#b3c2d1; font-size:20px; font-weight:300; }
+  .sub-cell.filled {
+    border:1.5px solid rgba(13,166,120,.55);
+    background:linear-gradient(160deg, rgba(16,185,129,.16), rgba(16,185,129,.04));
+    box-shadow:0 3px 10px rgba(16,185,129,.12);
+  }
+  .sub-cell.filled .nm {
+    font-size:12.5px; font-weight:700; color:#0b5a42; text-align:center;
+    line-height:1.2; word-break:break-all;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .sub-cell.filled .qt { font-size:11px; color:#3f8a6d; font-weight:600; }
+  .sub-cell.pulse { animation: pulse 1s ease-in-out 3; }
+  @keyframes pulse {
+    0%,100% { box-shadow:0 0 0 0 rgba(245,166,35,0); }
+    50% { box-shadow:0 0 0 6px rgba(245,166,35,.55); }
+  }
+  /* section view: grid + item list side by side on landscape iPad */
+  .sec-body { display:flex; flex-direction:column; gap:14px; }
+  @media (min-width: 1060px) {
+    .sec-body { display:grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 370px); align-items:start; }
+  }
+  .sec-list { background:var(--glass); border:1px solid var(--line2); border-radius:18px; overflow:hidden; }
+  .sec-list h3 { font-size:13.5px; color:var(--sub); padding:12px 16px 4px; font-weight:600; }
+  .sec-list .row {
+    display:flex; align-items:center; gap:12px; padding:12px 16px;
+    border-top:1px solid var(--line2); cursor:pointer;
+  }
+  .sec-list .row:active { background:#f2f6f9; }
+  .sec-list .pos {
+    background:#eaf0f5; color:var(--sub); border-radius:7px; padding:3px 8px;
+    font-size:12px; font-weight:700; white-space:nowrap;
+  }
+  .sec-list .nm { font-size:15px; font-weight:600; flex:1; color:var(--ink); }
+  .sec-list .meta { font-size:12px; color:var(--sub); white-space:nowrap; }
+
+  /* ---------- search results ---------- */
+  #search-panel {
+    display:none; position:fixed; left:0; right:0; bottom:0; z-index:25;
+    top:calc(66px + env(safe-area-inset-top));
+    background:rgba(243,246,249,.92);
+    -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
+    overflow-y:auto; padding:14px 12px 40px;
+  }
+  #search-panel .inner { max-width:800px; margin:0 auto; }
+  .sr-count { font-size:13.5px; color:var(--sub); margin:2px 2px 10px; }
+  .sr-list { background:var(--glass); border:1px solid var(--line2); border-radius:18px; overflow:hidden; }
+  .sr-row { display:flex; align-items:center; gap:12px; padding:14px 16px; border-top:1px solid var(--line2); cursor:pointer; }
+  .sr-row:first-child { border-top:none; }
+  .sr-row:active { background:#f2f6f9; }
+  .sr-row .loc {
+    background:linear-gradient(135deg, #10b981, #0891b2); color:#fff; border-radius:9px; padding:6px 11px;
+    font-size:13px; font-weight:900; white-space:nowrap; letter-spacing:.06em;
+    box-shadow:0 4px 12px rgba(16,185,129,.30);
+  }
+  .sr-row .pos { font-size:12px; color:var(--sub); white-space:nowrap; }
+  .sr-row .nm { font-size:15.5px; font-weight:700; flex:1; color:var(--ink); }
+  .sr-row .meta { font-size:12px; color:var(--sub); text-align:right; white-space:nowrap; }
+  .sr-none { text-align:center; color:var(--sub); padding:40px 0 10px; font-size:14.5px; }
+
+  /* ---------- modal ---------- */
+  .modal-bg {
+    display:none; position:fixed; inset:0; z-index:40;
+    background:rgba(30,50,70,.38);
+    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+    align-items:flex-start; justify-content:center;
+    padding: 8vh 16px 16px;
+  }
+  .modal-bg.show { display:flex; }
+  .modal {
+    background:linear-gradient(180deg, #ffffff, #f7fafc);
+    border:1px solid var(--line2);
+    border-radius:20px; width:100%; max-width:560px;
+    max-height:84vh; overflow-y:auto;
+    box-shadow:0 24px 70px rgba(20,45,75,.28);
+    padding:22px;
+  }
+  .modal-bg.show .modal { animation:pop .24s cubic-bezier(.18,.9,.28,1.12) both; }
+  .modal h2 { font-size:18px; font-weight:800; letter-spacing:.03em; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .modal h2 .loc-chip {
+    background:linear-gradient(135deg, #10b981, #0891b2); color:#fff; border-radius:9px; padding:4px 11px;
+    font-size:13px; font-weight:900; letter-spacing:.06em;
+    box-shadow:0 4px 12px rgba(16,185,129,.30);
+  }
+  .fld { margin-bottom:14px; }
+  .fld label { display:block; font-size:12.5px; color:var(--sub); font-weight:600; margin-bottom:5px; }
+  .fld input[type=text] {
+    width:100%; height:50px; border:1.5px solid var(--line); border-radius:12px;
+    padding:0 14px; font-size:16px; outline:none; background:#fff; color:var(--ink);
+    -webkit-appearance:none; appearance:none;
+  }
+  .fld input[type=text]:focus {
+    border-color:var(--acc); background:#fff;
+    box-shadow:0 0 0 3px rgba(16,185,129,.18);
+  }
+  .qty-row { display:flex; align-items:center; gap:10px; }
+  .qty-row button {
+    width:52px; height:48px; border:1px solid var(--line); border-radius:12px;
+    background:#f2f6f9; font-size:22px; color:var(--ink); cursor:pointer;
+  }
+  .qty-row button:active { background:#e4ebf1; }
+  .qty-row input {
+    width:80px; height:48px; text-align:center; font-size:18px; font-weight:700;
+    border:1.5px solid var(--line); border-radius:12px; outline:none;
+    background:#fff; color:var(--ink);
+  }
+  .btn-row { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+  .btn {
+    flex:1; min-width:120px; height:52px; border:none; border-radius:13px;
+    font-size:16px; font-weight:700; cursor:pointer;
+  }
+  .btn:active { filter:brightness(.93); }
+  .btn.primary {
+    background:linear-gradient(135deg, #10b981, #0d9488); color:#fff; font-weight:800;
+    box-shadow:0 6px 20px rgba(16,185,129,.30);
+  }
+  .btn.ghost { background:#eef2f6; color:var(--ink); border:1px solid var(--line2); }
+  .btn.danger { background:var(--rose-dim); color:var(--rose); }
+  .btn.danger-solid {
+    background:linear-gradient(135deg, #f43f5e, #e11d48); color:#fff;
+    box-shadow:0 6px 20px rgba(225,29,72,.25);
+  }
+  .btn.move { background:var(--orange-dim); color:var(--orange); }
+
+  .detail-info { background:#f6f9fb; border:1px solid var(--line2); border-radius:14px; padding:14px 16px; margin-bottom:6px; }
+  .detail-info .dnm { font-size:20px; font-weight:800; margin-bottom:6px; color:#115e46; }
+  .detail-info .drow { font-size:13.5px; color:var(--sub); margin-top:3px; }
+  .detail-info .drow b { color:var(--ink); }
+
+  /* ---------- history ---------- */
+  .hist-list { max-height:56vh; overflow-y:auto; margin:0 -22px; padding:0 22px; }
+  .hist-row { display:flex; gap:10px; padding:11px 0; border-bottom:1px solid var(--line2); align-items:center; }
+  .hist-tag {
+    font-size:11.5px; font-weight:800; border-radius:999px; padding:4px 10px; white-space:nowrap;
+  }
+  .hist-tag.add { background:var(--acc-dim); color:#0a8a63; }
+  .hist-tag.consume { background:var(--rose-dim); color:var(--rose); }
+  .hist-tag.edit { background:rgba(99,102,241,.12); color:#4f46e5; }
+  .hist-tag.move { background:var(--orange-dim); color:var(--orange); }
+  .hist-body { flex:1; font-size:14px; color:var(--ink); }
+  .hist-body .sub2 { font-size:11.5px; color:var(--sub); margin-top:1px; }
+  .hist-time { font-size:11.5px; color:var(--sub); white-space:nowrap; }
+
+  /* ---------- backup ---------- */
+  .bk-note { font-size:13px; color:var(--sub); line-height:1.7; margin-bottom:14px; }
+  .bk-warn { color:var(--rose); font-weight:600; }
+  #import-file { display:none; }
+
+  /* ---------- toast ---------- */
+  #toast {
+    position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(20px);
+    background:rgba(255,255,255,.96); color:var(--ink);
+    border:1px solid rgba(13,166,120,.45); border-radius:14px;
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    padding:13px 22px; font-size:14.5px; font-weight:600; z-index:60;
+    box-shadow:0 10px 34px rgba(20,45,75,.20), 0 0 18px rgba(16,185,129,.12);
+    opacity:0; pointer-events:none; transition:all .25s; max-width:88vw; text-align:center;
+  }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ---------- login ---------- */
+  #login-overlay {
+    position:fixed; inset:0; z-index:80; display:none;
+    align-items:center; justify-content:center; padding:24px;
+    background:var(--bg);
+  }
+  #login-overlay.show { display:flex; }
+  .login-card {
+    width:100%; max-width:380px; text-align:center;
+    background:var(--glass); border:1px solid var(--line2); border-radius:22px;
+    padding:30px 24px calc(26px + env(safe-area-inset-bottom));
+    box-shadow:var(--shadow); animation:pop .3s cubic-bezier(.18,.9,.28,1.12) both;
+  }
+  .login-logo {
+    width:60px; height:60px; margin:0 auto 16px; border-radius:16px;
+    background:linear-gradient(135deg, #10b981, #0ea5e9); color:#fff; font-weight:800; font-size:30px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 22px rgba(16,185,129,.35);
+  }
+  .login-card h1 { font-size:21px; font-weight:800; letter-spacing:.02em; }
+  .login-sub { color:var(--sub); font-size:13.5px; margin:4px 0 20px; }
+  .login-card .fld { text-align:left; }
+  .login-card input {
+    width:100%; height:50px; border:1.5px solid var(--line); border-radius:12px;
+    padding:0 14px; font-size:16px; outline:none; background:#fff; color:var(--ink);
+    -webkit-appearance:none; appearance:none;
+  }
+  .login-card input:focus { border-color:var(--acc); box-shadow:0 0 0 3px rgba(16,185,129,.18); }
+  .login-error { color:var(--rose); font-size:13px; font-weight:600; min-height:18px; margin:2px 2px 12px; text-align:left; }
+  .login-card .btn { width:100%; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-row">
+    <div class="hd-title" onclick="goHome()"><span class="logo">収</span><span id="hd-label">区画収納</span></div>
+    <div class="searchbox">
+      <span class="mag">🔍</span>
+      <input id="search-input" type="text" placeholder="品名で検索" autocomplete="off">
+      <button class="clear" id="search-clear" onclick="clearSearch()">✕</button>
+    </div>
+    <button class="hd-btn" onclick="openHistory()">🕘 履歴</button>
+    <button class="hd-btn" onclick="openBackup()">💾 保存</button>
+    <button class="hd-btn" id="hd-logout" onclick="doLogout()" title="ログアウト">⏻</button>
+  </div>
+</header>
+
+<div id="move-banner">
+  <span id="move-msg">移動先の空きマスをタップしてください</span>
+  <button onclick="cancelMove()">キャンセル</button>
+</div>
+
+<div id="search-panel"><div class="inner">
+  <div class="sr-count" id="sr-count"></div>
+  <div id="sr-results"></div>
+</div></div>
+
+<main>
+  <!-- home -->
+  <div id="view-home">
+    <div class="stats">
+      <div class="stat"><b id="st-items">0</b><span>品を収納中</span></div>
+      <div class="stat"><b id="st-secs">0</b><span>/ 135 区画を使用</span></div>
+      <div class="stat"><b id="st-rate">0%</b><span>使用率</span></div>
+    </div>
+    <div class="hint" id="home-hint">実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。</div>
+    <div class="ov-wrap"><div class="ov-cols" id="ov-grid"></div></div>
+  </div>
+
+  <!-- section -->
+  <div id="view-section" style="display:none">
+    <div class="sec-bar">
+      <button class="back" onclick="goHome()">← 全体</button>
+      <div>
+        <div class="sec-title"><span id="sec-title">A-1</span><button class="sec-label" id="sec-label" onclick="openLabelEdit()"></button></div>
+        <div class="sec-count" id="sec-count"></div>
+      </div>
+      <div class="sec-nav">
+        <button onclick="stepSection(-1)">◀</button>
+        <button onclick="stepSection(1)">▶</button>
+      </div>
+    </div>
+    <div class="sec-body">
+      <div class="sub-wrap"><div class="sub-grid" id="sub-grid"></div></div>
+      <div class="sec-list" id="sec-list"></div>
+    </div>
+  </div>
+</main>
+
+<!-- add / edit modal -->
+<div class="modal-bg" id="m-form">
+  <div class="modal">
+    <h2 id="mf-title"><span class="loc-chip" id="mf-loc"></span><span id="mf-head">収納する</span></h2>
+    <div class="fld">
+      <label>品名（必須）</label>
+      <input type="text" id="mf-name" list="name-suggestions" autocomplete="off">
+      <datalist id="name-suggestions"></datalist>
+    </div>
+    <div class="fld" id="mf-qty-fld">
+      <label>数量（左上から順に、1マスにつき1つずつ収納します）</label>
+      <div class="qty-row">
+        <button onclick="bumpQty(-1)">−</button>
+        <input type="number" id="mf-qty" value="1" min="1" max="81" inputmode="numeric">
+        <button onclick="bumpQty(1)">＋</button>
+      </div>
+    </div>
+    <div class="fld">
+      <label>メモ（任意）</label>
+      <input type="text" id="mf-note" autocomplete="off">
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="closeModal('m-form')">キャンセル</button>
+      <button class="btn primary" id="mf-save" onclick="submitForm()">収納する</button>
+    </div>
+  </div>
+</div>
+
+<!-- detail modal -->
+<div class="modal-bg" id="m-detail">
+  <div class="modal">
+    <h2><span class="loc-chip" id="md-loc"></span>収納中の品</h2>
+    <div class="detail-info">
+      <div class="dnm" id="md-name"></div>
+      <div class="drow" id="md-qty-row">数量: <b id="md-qty"></b></div>
+      <div class="drow" id="md-same-row">同じ品: この区画に <b id="md-same"></b></div>
+      <div class="drow">収納日: <b id="md-date"></b> <span id="md-days"></span></div>
+      <div class="drow" id="md-by-row">収納した人: <b id="md-by"></b></div>
+      <div class="drow" id="md-note-row">メモ: <b id="md-note"></b></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn danger-solid" onclick="consumeCell()">消費する（このマスを空ける）</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="openEdit()">✏️ 編集</button>
+      <button class="btn move" onclick="startMove()">↔️ 移動</button>
+      <button class="btn ghost" onclick="closeModal('m-detail')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- section label modal -->
+<div class="modal-bg" id="m-label">
+  <div class="modal">
+    <h2><span class="loc-chip" id="ml-loc"></span>区画の名前</h2>
+    <div class="fld">
+      <label>名前（空欄で保存すると名前を消せます）</label>
+      <input type="text" id="ml-name" autocomplete="off">
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="closeModal('m-label')">キャンセル</button>
+      <button class="btn primary" onclick="saveLabel()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- history modal -->
+<div class="modal-bg" id="m-history">
+  <div class="modal">
+    <h2>🕘 履歴（新しい順）</h2>
+    <div class="hist-list" id="hist-list"></div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="closeModal('m-history')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- backup modal -->
+<div class="modal-bg" id="m-backup">
+  <div class="modal">
+    <h2>💾 バックアップ</h2>
+    <div class="bk-note" id="bk-status"></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="exportBackup()">⬇ バックアップを書き出す</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="document.getElementById('import-file').click()">⬆ バックアップから復元する</button>
+      <input type="file" id="import-file" accept=".json,application/json">
+    </div>
+    <div class="bk-note" style="margin-top:14px">
+      書き出したファイルは iPad の「ファイル」アプリ（iCloud Drive など）に保存されます。
+      定期的に書き出しておくと、iPad の故障・紛失時にも復元できます。<br>
+      <span class="bk-warn">※ 復元すると現在のデータはすべて置き換わります。</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="closeModal('m-backup')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- login overlay -->
+<div id="login-overlay" class="show">
+  <div class="login-card">
+    <div class="login-logo">収</div>
+    <h1>区画収納管理</h1>
+    <p class="login-sub">ログインしてください</p>
+    <div class="fld"><label>メールアドレス</label>
+      <input type="email" id="login-email" autocomplete="username" inputmode="email"></div>
+    <div class="fld"><label>パスワード</label>
+      <input type="password" id="login-pass" autocomplete="current-password"></div>
+    <div id="login-error" class="login-error"></div>
+    <button class="btn primary" id="login-btn" onclick="doLogin()">ログイン</button>
+  </div>
+</div>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCGODBjxnS8fM5DbWz7_KuIuN__5YdPaaM",
+  authDomain: "deep-freezer-58571.firebaseapp.com",
+  projectId: "deep-freezer-58571",
+  storageBucket: "deep-freezer-58571.firebasestorage.app",
+  messagingSenderId: "244737429959",
+  appId: "1:244737429959:web:f598a2c9bcd468302a49e2"
+};
+</script>
+
+<script>
+'use strict';
+
+/* ================= data ================= */
+const COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'];
+const ROWS = [1,2,3,4,5,6,7,8,9];
+const SUB = 9;
+const LS_EXPORT = 'shuno-kanri-last-export';
+
+// Firestore が正。state は各端末のミラー（onSnapshot で更新される）
+let state = { items: {}, labels: {} };
+// items: { "A-3:2:5": {name, qty, note, addedAt, addedBy} }
+// labels: { "A-1": "やさい" }
+
+const keyOf = (sec, r, c) => `${sec}:${r}:${c}`;
+function parseKey(k) {
+  const [sec, r, c] = k.split(':');
+  return { sec, r: +r, c: +c };
+}
+function posLabel(r, c) { return `${r}段 ${c}列`; }
+
+/* kana-insensitive match: katakana -> hiragana, lowercase */
+function norm(s) {
+  return (s || '').toLowerCase()
+    .replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60))
+    .replace(/\s+/g, '');
+}
+
+function fmtDate(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+}
+function fmtDateTime(ts) {
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function daysAgoLabel(ts) {
+  const days = Math.floor((Date.now() - ts) / 86400000);
+  if (days <= 0) return '（今日）';
+  return `（${days}日前）`;
+}
+
+/* ================= views ================= */
+let currentSec = null;
+let moveFrom = null;       // item key being moved
+let detailKey = null;      // key shown in detail modal
+let formTarget = null;     // {sec,r,c} for add, or key string for edit
+let highlightPos = null;   // {r,c} to pulse after opening section
+
+function secItems(sec) {
+  const out = [];
+  for (const k in state.items) {
+    if (k.startsWith(sec + ':')) out.push(Object.assign({ key: k }, parseKey(k), state.items[k]));
+  }
+  out.sort((a, b) => a.r - b.r || a.c - b.c);
+  return out;
+}
+
+function goHome() {
+  currentSec = null;
+  document.getElementById('view-home').style.display = '';
+  document.getElementById('view-section').style.display = 'none';
+  document.getElementById('hd-label').textContent = '区画収納';
+  renderHome();
+  window.scrollTo(0, 0);
+}
+
+/* physical layout: containers stacked in columns of 3, rightmost slot is spare space */
+const LAYOUT = [ ['A','B','C'], ['D','E','F'], ['G','H','I'], ['J','K','L'], ['M','N','O'], [] ];
+
+function renderHome() {
+  const grid = document.getElementById('ov-grid');
+  let html = '';
+  for (const col of LAYOUT) {
+    html += '<div class="ov-col">';
+    if (col.length === 0) html += '<div class="ov-space">空き<br>スペース</div>';
+    for (const L of col) {
+      let used = 0;
+      let rows = '';
+      for (const r of ROWS) {
+        const sec = `${L}-${r}`;
+        const n = secItems(sec).length;
+        if (n > 0) used++;
+        const lbl = `<span class="lb">${state.labels[sec] ? esc(state.labels[sec]) : ''}</span>`;
+        if (n === 0) {
+          rows += `<div class="ov-sec empty" onclick="openSection('${sec}')"><span class="n">${r}</span>${lbl}<span class="ct">空</span></div>`;
+        } else {
+          rows += `<div class="ov-sec" onclick="openSection('${sec}')"><span class="n">${r}</span>${lbl}<span class="ct">${n}品</span></div>`;
+        }
+      }
+      html += `<div class="ov-container"><div class="ov-ct-head"><span class="letter">${L}</span><span class="used">${used}/9</span></div>${rows}</div>`;
+    }
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+
+  const totalItems = Object.keys(state.items).length;
+  const usedSecs = new Set(Object.keys(state.items).map(k => k.split(':')[0])).size;
+  document.getElementById('st-items').textContent = totalItems;
+  document.getElementById('st-secs').textContent = usedSecs;
+  document.getElementById('st-rate').textContent = `${Math.round(usedSecs / 135 * 100)}%`;
+  const hintEl = document.getElementById('home-hint');
+  if (!firstLoaded) hintEl.textContent = 'クラウドと同期しています…';
+  else if (totalItems === 0) hintEl.textContent = 'まだ何も収納されていません。段をタップして収納を始めましょう（各コンテナは上から1〜9段）。';
+  else hintEl.textContent = '実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。';
+}
+
+function openSection(sec, hl) {
+  currentSec = sec;
+  highlightPos = hl || null;
+  document.getElementById('view-home').style.display = 'none';
+  document.getElementById('view-section').style.display = '';
+  document.getElementById('hd-label').textContent = sec;
+  renderSection();
+  window.scrollTo(0, 0);
+}
+
+/* physical order: A-1 → A-2 → … → A-9 → B-1 → … (top-to-bottom within a container) */
+function stepSection(dir) {
+  if (!currentSec) return;
+  const [c, r] = currentSec.split('-');
+  let idx = COLS.indexOf(c) * 9 + (+r - 1);
+  idx = (idx + dir + 135) % 135;
+  openSection(`${COLS[Math.floor(idx / 9)]}-${(idx % 9) + 1}`);
+}
+
+function renderSection() {
+  const sec = currentSec;
+  document.getElementById('sec-title').textContent = `区画 ${sec}`;
+  const lblBtn = document.getElementById('sec-label');
+  if (state.labels[sec]) {
+    lblBtn.textContent = `🏷 ${state.labels[sec]}`;
+    lblBtn.classList.remove('unset');
+  } else {
+    lblBtn.textContent = '🏷 名前を付ける';
+    lblBtn.classList.add('unset');
+  }
+  const items = secItems(sec);
+  document.getElementById('sec-count').textContent = `${items.length} / 81 マス使用中`;
+
+  const map = {};
+  for (const it of items) map[`${it.r}:${it.c}`] = it;
+
+  let html = '<div class="sub-head"></div>';
+  for (let c = 1; c <= SUB; c++) html += `<div class="sub-head">${c}</div>`;
+  for (let r = 1; r <= SUB; r++) {
+    html += `<div class="sub-head">${r}</div>`;
+    for (let c = 1; c <= SUB; c++) {
+      const it = map[`${r}:${c}`];
+      const pulse = highlightPos && highlightPos.r === r && highlightPos.c === c ? ' pulse' : '';
+      if (it) {
+        const qt = it.qty > 1 ? `<span class="qt">×${it.qty}</span>` : '';
+        html += `<div class="sub-cell filled${pulse}" onclick="tapCell(${r},${c})"><span class="nm">${esc(it.name)}</span>${qt}</div>`;
+      } else {
+        html += `<div class="sub-cell${pulse}" onclick="tapCell(${r},${c})"><span class="plus">＋</span></div>`;
+      }
+    }
+  }
+  document.getElementById('sub-grid').innerHTML = html;
+  highlightPos = null;
+
+  const list = document.getElementById('sec-list');
+  if (items.length === 0) {
+    list.innerHTML = '<h3>この区画は空です。マスをタップして収納できます。</h3><div style="height:10px"></div>';
+  } else {
+    list.innerHTML = '<h3>この区画の収納一覧</h3>' + items.map(it => `
+      <div class="row" onclick="openDetail('${it.key}')">
+        <span class="pos">${posLabel(it.r, it.c)}</span>
+        <span class="nm">${esc(it.name)}${it.qty > 1 ? ` ×${it.qty}` : ''}</span>
+        <span class="meta">${fmtDate(it.addedAt)}収納</span>
+      </div>`).join('');
+  }
+}
+
+function tapCell(r, c) {
+  const k = keyOf(currentSec, r, c);
+  const it = state.items[k];
+  if (moveFrom) {
+    if (it) { showToast('空いているマスをタップしてください'); return; }
+    doMove(currentSec, r, c);
+    return;
+  }
+  if (it) openDetail(k);
+  else openAddForm(currentSec, r, c);
+}
+
+/* ================= add / edit ================= */
+function openAddForm(sec, r, c) {
+  formTarget = { mode: 'add', sec, r, c };
+  document.getElementById('mf-loc').textContent = `${sec} ${posLabel(r, c)}`;
+  document.getElementById('mf-head').textContent = 'に収納する';
+  document.getElementById('mf-save').textContent = '収納する';
+  document.getElementById('mf-name').value = '';
+  document.getElementById('mf-qty').value = 1;
+  document.getElementById('mf-note').value = '';
+  document.getElementById('mf-qty-fld').style.display = '';
+  updateSuggestions();
+  openModal('m-form');
+  setTimeout(() => document.getElementById('mf-name').focus(), 100);
+}
+
+function openEdit() {
+  const it = state.items[detailKey];
+  if (!it) return;
+  const p = parseKey(detailKey);
+  formTarget = { mode: 'edit', key: detailKey };
+  closeModal('m-detail');
+  document.getElementById('mf-loc').textContent = `${p.sec} ${posLabel(p.r, p.c)}`;
+  document.getElementById('mf-head').textContent = 'の内容を編集';
+  document.getElementById('mf-save').textContent = '保存する';
+  document.getElementById('mf-name').value = it.name;
+  document.getElementById('mf-note').value = it.note || '';
+  document.getElementById('mf-qty-fld').style.display = 'none'; // 1マス=1品なので編集では数量を扱わない
+  updateSuggestions();
+  openModal('m-form');
+}
+
+function bumpQty(d) {
+  const el = document.getElementById('mf-qty');
+  el.value = Math.min(81, Math.max(1, (parseInt(el.value) || 1) + d));
+}
+
+/* collect up to n empty cells starting from (r,c), scanning left→right / top→bottom */
+function emptyCellsFrom(sec, r, c, n) {
+  const start = (r - 1) * SUB + (c - 1);
+  const out = [];
+  for (let idx = start; idx < SUB * SUB && out.length < n; idx++) {
+    const rr = Math.floor(idx / SUB) + 1;
+    const cc = (idx % SUB) + 1;
+    if (!state.items[keyOf(sec, rr, cc)]) out.push([rr, cc]);
+  }
+  return out;
+}
+
+function submitForm() {
+  const name = document.getElementById('mf-name').value.trim();
+  const note = document.getElementById('mf-note').value.trim();
+  if (!name) { showToast('品名を入力してください'); return; }
+
+  if (formTarget.mode === 'add') {
+    const qty = Math.min(81, Math.max(1, parseInt(document.getElementById('mf-qty').value) || 1));
+    const { sec, r, c } = formTarget;
+    const targets = emptyCellsFrom(sec, r, c, qty);
+    if (targets.length === 0) { showToast('空きマスがありません'); return; }
+    const now = Date.now();
+    const batch = db.batch();
+    targets.forEach(([rr, cc]) => {
+      batch.set(itemRef(sec, rr, cc), { sec, r: rr, c: cc, name, qty: 1, note, addedAt: now, addedBy: currentUser.email });
+    });
+    const [fr, fc] = targets[0];
+    batch.commit()
+      .then(() => addHistory({ type: 'add', sec, r: fr, c: fc, name, qty: targets.length }))
+      .catch(() => showToast('保存に失敗しました'));
+    if (targets.length < qty) {
+      showToast(`空きマスが足りず、「${name}」を ${targets.length} マスに収納しました`);
+    } else if (targets.length >= 2) {
+      showToast(`「${name}」を ${sec} の ${targets.length} マスに収納しました`);
+    } else {
+      showToast(`「${name}」を ${sec} ${posLabel(fr, fc)} に収納しました`);
+    }
+  } else {
+    const p = parseKey(formTarget.key);
+    itemRef(p.sec, p.r, p.c).update({ name, note })
+      .then(() => addHistory({ type: 'edit', sec: p.sec, r: p.r, c: p.c, name, qty: 1 }))
+      .catch(() => showToast('更新に失敗しました'));
+    showToast('内容を更新しました');
+  }
+  closeModal('m-form');
+}
+
+function updateSuggestions() {
+  const names = [];
+  const seen = new Set();
+  for (const k in state.items) {
+    const n = state.items[k].name;
+    if (n && !seen.has(n)) { seen.add(n); names.push(n); }
+  }
+  document.getElementById('name-suggestions').innerHTML =
+    names.map(n => `<option value="${esc(n)}">`).join('');
+}
+
+/* ================= detail / consume ================= */
+function openDetail(k) {
+  const it = state.items[k];
+  if (!it) return;
+  detailKey = k;
+  const p = parseKey(k);
+  document.getElementById('md-loc').textContent = `${p.sec} ${posLabel(p.r, p.c)}`;
+  document.getElementById('md-name').textContent = it.name;
+  const q = it.qty || 1;
+  const qtyRow = document.getElementById('md-qty-row');
+  if (q > 1) { qtyRow.style.display = ''; document.getElementById('md-qty').textContent = `${q} 個`; }
+  else { qtyRow.style.display = 'none'; }
+  const same = secItems(p.sec).filter(x => x.name === it.name).length;
+  const sameRow = document.getElementById('md-same-row');
+  if (same > 1) { sameRow.style.display = ''; document.getElementById('md-same').textContent = `${same} マス`; }
+  else { sameRow.style.display = 'none'; }
+  document.getElementById('md-date').textContent = fmtDate(it.addedAt);
+  document.getElementById('md-days').textContent = daysAgoLabel(it.addedAt);
+  const byRow = document.getElementById('md-by-row');
+  if (it.addedBy) { byRow.style.display = ''; document.getElementById('md-by').textContent = it.addedBy.split('@')[0]; }
+  else { byRow.style.display = 'none'; }
+  document.getElementById('md-note-row').style.display = it.note ? '' : 'none';
+  document.getElementById('md-note').textContent = it.note || '';
+  openModal('m-detail');
+}
+
+function consumeCell() {
+  const it = state.items[detailKey];
+  if (!it) return;
+  const p = parseKey(detailKey);
+  itemRef(p.sec, p.r, p.c).delete()
+    .then(() => addHistory({ type: 'consume', sec: p.sec, r: p.r, c: p.c, name: it.name, qty: it.qty || 1 }))
+    .catch(() => showToast('消費の記録に失敗しました'));
+  closeModal('m-detail');
+  showToast(`「${it.name}」を消費しました（マスが空きました）`);
+}
+
+/* ================= move ================= */
+function startMove() {
+  moveFrom = detailKey;
+  const it = state.items[detailKey];
+  closeModal('m-detail');
+  document.getElementById('move-msg').textContent =
+    `「${it.name}」の移動先の空きマスをタップしてください（別の区画でも可）`;
+  document.getElementById('move-banner').style.display = 'flex';
+}
+
+function cancelMove() {
+  moveFrom = null;
+  document.getElementById('move-banner').style.display = 'none';
+}
+
+function doMove(sec, r, c) {
+  const it = state.items[moveFrom];
+  if (!it) { cancelMove(); return; }
+  const from = parseKey(moveFrom);
+  const batch = db.batch();
+  batch.delete(itemRef(from.sec, from.r, from.c));
+  batch.set(itemRef(sec, r, c), {
+    sec, r, c, name: it.name, qty: it.qty || 1, note: it.note || '',
+    addedAt: it.addedAt || Date.now(), addedBy: it.addedBy || (currentUser ? currentUser.email : '')
+  });
+  batch.commit()
+    .then(() => addHistory({ type: 'move', sec, r, c, name: it.name, qty: it.qty || 1,
+             detail: `${from.sec} ${posLabel(from.r, from.c)} から` }))
+    .catch(() => showToast('移動に失敗しました'));
+  cancelMove();
+  showToast(`「${it.name}」を ${sec} ${posLabel(r, c)} に移動しました`);
+}
+
+/* ================= section label ================= */
+function openLabelEdit() {
+  document.getElementById('ml-loc').textContent = currentSec;
+  document.getElementById('ml-name').value = state.labels[currentSec] || '';
+  openModal('m-label');
+  setTimeout(() => document.getElementById('ml-name').focus(), 100);
+}
+
+function saveLabel() {
+  const v = document.getElementById('ml-name').value.trim();
+  const ref = db.collection('labels').doc(currentSec);
+  if (v) ref.set({ name: v }).catch(() => showToast('保存に失敗しました'));
+  else ref.delete().catch(() => {});
+  closeModal('m-label');
+  showToast(v ? `区画 ${currentSec} に「${v}」と名前を付けました` : `区画 ${currentSec} の名前を消しました`);
+}
+
+/* ================= search ================= */
+const searchInput = document.getElementById('search-input');
+searchInput.addEventListener('input', renderSearch);
+
+function renderSearch() {
+  const q = norm(searchInput.value);
+  const panel = document.getElementById('search-panel');
+  document.getElementById('search-clear').style.display = searchInput.value ? 'block' : 'none';
+  if (!q) { panel.style.display = 'none'; return; }
+
+  const hits = [];
+  for (const k in state.items) {
+    const it = state.items[k];
+    if (norm(it.name).includes(q) || norm(it.note).includes(q)) {
+      hits.push(Object.assign({ key: k }, parseKey(k), it));
+    }
+  }
+  hits.sort((a, b) => a.sec.localeCompare(b.sec) || a.r - b.r || a.c - b.c);
+
+  document.getElementById('sr-count').textContent =
+    `「${searchInput.value.trim()}」の検索結果: ${hits.length}件`;
+  const box = document.getElementById('sr-results');
+  if (hits.length === 0) {
+    box.innerHTML = '<div class="sr-none">見つかりませんでした</div>';
+  } else {
+    box.innerHTML = '<div class="sr-list">' + hits.map(h => `
+      <div class="sr-row" onclick="jumpTo('${h.key}')">
+        <span class="loc">${h.sec}</span>
+        <span class="pos">${posLabel(h.r, h.c)}</span>
+        <span class="nm">${esc(h.name)}${h.qty > 1 ? ` ×${h.qty}` : ''}</span>
+        <span class="meta">${fmtDate(h.addedAt)}収納<br>${esc(h.note || '')}</span>
+      </div>`).join('') + '</div>';
+  }
+  panel.style.display = 'block';
+}
+
+function clearSearch() {
+  searchInput.value = '';
+  renderSearch();
+}
+
+function jumpTo(k) {
+  const p = parseKey(k);
+  clearSearch();
+  searchInput.blur();
+  openSection(p.sec, { r: p.r, c: p.c });
+}
+
+/* ================= history ================= */
+const HIST_LABEL = { add: '収納', consume: '消費', edit: '編集', move: '移動' };
+
+function openHistory() {
+  const box = document.getElementById('hist-list');
+  box.innerHTML = '<div class="sr-none">読み込み中…</div>';
+  openModal('m-history');
+  if (!db) { box.innerHTML = '<div class="sr-none">履歴を取得できません</div>'; return; }
+  db.collection('history').orderBy('ts', 'desc').limit(200).get().then(snap => {
+    if (snap.empty) { box.innerHTML = '<div class="sr-none">まだ履歴がありません</div>'; return; }
+    let html = '';
+    snap.forEach(doc => {
+      const h = doc.data();
+      const who = h.by ? esc(String(h.by).split('@')[0]) : '';
+      html += `
+      <div class="hist-row">
+        <span class="hist-tag ${h.type}">${HIST_LABEL[h.type] || h.type}</span>
+        <div class="hist-body">
+          ${esc(h.name)}${h.qty > 1 ? ` ×${h.qty}` : ''}
+          <div class="sub2">${h.sec} ${posLabel(h.r, h.c)}${h.detail ? '　' + esc(h.detail) : ''}${who ? '　/ ' + who : ''}</div>
+        </div>
+        <span class="hist-time">${fmtDateTime(h.ts)}</span>
+      </div>`;
+    });
+    box.innerHTML = html;
+  }).catch(() => { box.innerHTML = '<div class="sr-none">履歴の取得に失敗しました</div>'; });
+}
+
+/* ================= backup ================= */
+function openBackup() {
+  const n = Object.keys(state.items).length;
+  const last = localStorage.getItem(LS_EXPORT);
+  let s = `現在 ${n} 品をクラウドに保存し、全端末で共有しています。<br>`;
+  if (last) {
+    const days = Math.floor((Date.now() - (+last)) / 86400000);
+    s += `この端末での前回の書き出し: ${fmtDate(+last)}`;
+    if (days >= 30) s += ` <span class="bk-warn">（${days}日前）</span>`;
+  } else {
+    s += 'この端末からはまだ書き出していません。';
+  }
+  document.getElementById('bk-status').innerHTML = s;
+  openModal('m-backup');
+}
+
+function exportBackup() {
+  const finish = (history) => {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    const fname = `収納バックアップ-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.json`;
+    const blob = new Blob([JSON.stringify({ exportedAt: Date.now(), items: state.items, labels: state.labels, history }, null, 1)],
+                          { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    localStorage.setItem(LS_EXPORT, String(Date.now()));
+    openBackup();
+    showToast('バックアップを書き出しました');
+  };
+  if (!db) { finish([]); return; }
+  showToast('バックアップを準備しています…');
+  db.collection('history').orderBy('ts', 'desc').limit(1000).get()
+    .then(snap => { const h = []; snap.forEach(d => h.push(d.data())); finish(h); })
+    .catch(() => finish([]));
+}
+
+document.getElementById('import-file').addEventListener('change', function () {
+  const f = this.files[0];
+  this.value = '';
+  if (!f) return;
+  if (!db) { alert('ログインしてから復元してください。'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(reader.result);
+      if (!obj || typeof obj.items !== 'object') { alert('バックアップファイルの形式が正しくありません。'); return; }
+      const n = Object.keys(obj.items).length;
+      if (!confirm(`このバックアップの ${n} 品を、共有データに復元します（同じ場所は上書き）。よろしいですか？`)) return;
+      restoreToFirestore(obj);
+      closeModal('m-backup');
+    } catch (e) {
+      alert('ファイルを読み込めませんでした。');
+    }
+  };
+  reader.readAsText(f);
+});
+
+/* バックアップ内容を Firestore に書き戻す（マス単位・最大400件ずつ） */
+function restoreToFirestore(obj) {
+  const ops = [];
+  Object.keys(obj.items || {}).forEach(k => {
+    const parts = k.split(':'); const sec = parts[0], r = +parts[1], c = +parts[2];
+    if (!sec || !r || !c) return;
+    const d = obj.items[k] || {};
+    ops.push([itemRef(sec, r, c), {
+      sec, r, c, name: d.name || '', qty: d.qty || 1, note: d.note || '',
+      addedAt: d.addedAt || Date.now(), addedBy: d.addedBy || (currentUser ? currentUser.email : '')
+    }]);
+  });
+  Object.keys(obj.labels || {}).forEach(sec => {
+    ops.push([db.collection('labels').doc(sec), { name: obj.labels[sec] }]);
+  });
+  const itemCount = Object.keys(obj.items || {}).length;
+  let i = 0;
+  (function next() {
+    if (i >= ops.length) { showToast(`復元しました（${itemCount} 品）`); return; }
+    const batch = db.batch();
+    ops.slice(i, i + 400).forEach(([ref, data]) => batch.set(ref, data));
+    i += 400;
+    batch.commit().then(next).catch(() => showToast('復元中にエラーが発生しました'));
+  })();
+}
+
+/* ================= common ui ================= */
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('show'); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-bg.show').forEach(m => m.classList.remove('show'));
+});
+document.getElementById('mf-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); submitForm(); }
+});
+document.getElementById('ml-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); saveLabel(); }
+});
+['login-email', 'login-pass'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
+  });
+});
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, ch =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+}
+
+/* ================= Firebase / sync ================= */
+let auth = null, db = null;
+let currentUser = null;
+let unsubItems = null, unsubLabels = null;
+let firstLoaded = false;
+
+const itemId = (sec, r, c) => `${sec}_${r}_${c}`;
+const itemRef = (sec, r, c) => db.collection('items').doc(itemId(sec, r, c));
+function addHistory(entry) {
+  if (!db) return;
+  db.collection('history').add(Object.assign({ ts: Date.now(), by: currentUser ? currentUser.email : '' }, entry)).catch(() => {});
+}
+
+function startSync() {
+  if (unsubItems) return;
+  unsubItems = db.collection('items').onSnapshot(snap => {
+    const m = {};
+    snap.forEach(doc => {
+      const d = doc.data();
+      m[`${d.sec}:${d.r}:${d.c}`] = { name: d.name, qty: d.qty || 1, note: d.note || '', addedAt: d.addedAt, addedBy: d.addedBy || '' };
+    });
+    state.items = m; firstLoaded = true; rerender();
+  }, err => showToast('同期エラー: ' + (err.code || err.message)));
+  unsubLabels = db.collection('labels').onSnapshot(snap => {
+    const m = {};
+    snap.forEach(doc => { m[doc.id] = doc.data().name; });
+    state.labels = m; rerender();
+  }, () => {});
+}
+function stopSync() {
+  if (unsubItems) { unsubItems(); unsubItems = null; }
+  if (unsubLabels) { unsubLabels(); unsubLabels = null; }
+}
+function rerender() {
+  if (currentSec) renderSection(); else renderHome();
+  if (searchInput.value) renderSearch();
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'メールアドレスとパスワードを入力してください'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'ログイン中…';
+  auth.signInWithEmailAndPassword(email, pass)
+    .then(() => { document.getElementById('login-pass').value = ''; })
+    .catch(e => { errEl.textContent = loginErrMsg(e.code); })
+    .finally(() => { btn.disabled = false; btn.textContent = 'ログイン'; });
+}
+function loginErrMsg(code) {
+  switch (code) {
+    case 'auth/invalid-email': return 'メールアドレスの形式が正しくありません';
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential': return 'メールアドレスまたはパスワードが違います';
+    case 'auth/too-many-requests': return '試行回数が多すぎます。しばらくしてからお試しください';
+    case 'auth/network-request-failed': return 'ネットワークに接続できません';
+    default: return 'ログインに失敗しました（' + code + '）';
+  }
+}
+function doLogout() {
+  if (!auth || !currentUser) return;
+  if (!confirm('ログアウトしますか？')) return;
+  cancelMove();
+  ['m-form', 'm-detail', 'm-label', 'm-history', 'm-backup'].forEach(closeModal);
+  currentSec = null;
+  auth.signOut();
+}
+
+function initFirebase() {
+  if (typeof firebase === 'undefined') {
+    document.getElementById('login-overlay').classList.add('show');
+    document.getElementById('login-error').textContent = 'インターネットに接続してから開き直してください';
+    return;
+  }
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  auth.onAuthStateChanged(user => {
+    currentUser = user;
+    const ov = document.getElementById('login-overlay');
+    const logoutBtn = document.getElementById('hd-logout');
+    if (user) {
+      ov.classList.remove('show');
+      if (logoutBtn) logoutBtn.title = 'ログアウト（' + user.email + '）';
+      startSync();
+    } else {
+      stopSync();
+      state.items = {}; state.labels = {}; firstLoaded = false;
+      goHome();
+      ov.classList.add('show');
+    }
+  });
+}
+
+/* ================= start ================= */
+goHome();
+initFirebase();
+
+/* offline support (works when served over http/https; skipped for file://) */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
