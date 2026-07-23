@@ -124,7 +124,7 @@
 
   /* ---------- home ---------- */
   .stats {
-    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;
+    display:flex; gap:10px; flex-wrap:wrap;
   }
   .stat {
     background:var(--glass); border:1px solid var(--line2); border-radius:14px;
@@ -383,6 +383,54 @@
   }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
+  /* ---------- chips (品名プリセット / 最近) ---------- */
+  .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+  .chip {
+    border:1px solid var(--line); background:#fff; color:#0b5a42;
+    border-radius:999px; padding:7px 13px; font-size:13.5px; font-weight:700; cursor:pointer;
+    max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .chip:active { background:#eef2f6; }
+  .chip.recent { color:#0a6ca8; border-color:rgba(10,108,168,.3); background:rgba(10,108,168,.06); }
+  .chip.edit { color:var(--sub); border-style:dashed; font-weight:600; }
+
+  /* ---------- 最近の品名（ホーム） ---------- */
+  .stats-row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .recent-strip { display:flex; align-items:center; gap:8px; flex:1; min-width:220px; }
+  .recent-label { font-size:12px; color:var(--sub); font-weight:700; white-space:nowrap; }
+  .recent-chips { display:flex; flex-wrap:wrap; gap:7px; }
+
+  /* ---------- 複数選択 / 一括移動 ---------- */
+  #select-bar {
+    display:none; position:sticky; top:calc(66px + env(safe-area-inset-top)); z-index:29;
+    background:linear-gradient(90deg, rgba(13,166,120,.96), rgba(10,150,178,.96));
+    color:#fff; padding:10px 14px; align-items:center; justify-content:space-between; gap:10px;
+    font-size:14px; font-weight:700; box-shadow:0 6px 20px rgba(13,166,120,.25);
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  }
+  #select-bar .sb-btns { display:flex; gap:8px; }
+  #select-bar button { border:1.5px solid rgba(255,255,255,.75); background:#fff; color:#0a8a63; border-radius:9px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; }
+  #select-bar button.ghost2 { background:transparent; color:#fff; }
+  .sub-cell { position:relative; }
+  .sub-cell.selected { border:2px solid #0a8a63; background:linear-gradient(160deg, rgba(16,185,129,.38), rgba(16,185,129,.14)); }
+  .sub-cell .checkbadge { position:absolute; top:3px; right:5px; font-size:12px; color:#0a8a63; font-weight:900; }
+  .sec-nav .sel-toggle { width:auto; padding:0 12px; font-size:13.5px; font-weight:700; white-space:nowrap; }
+  .sec-nav .sel-toggle.active { background:var(--acc-dim); color:#0a8a63; border-color:rgba(16,185,129,.45); }
+
+  /* ---------- ヘッダーのアイコンボタン / 無効状態 ---------- */
+  .hd-btn:disabled { opacity:.35; cursor:default; }
+  .hd-btn.ic { padding:0 12px; font-size:18px; }
+
+  /* ---------- 品名プリセット管理 ---------- */
+  .preset-list { max-height:44vh; overflow-y:auto; margin-top:4px; }
+  .preset-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 4px; border-bottom:1px solid var(--line2); }
+  .preset-row span { font-size:15px; font-weight:600; color:var(--ink); }
+  .preset-row button { width:34px; height:34px; border:none; border-radius:9px; background:var(--rose-dim); color:var(--rose); font-size:16px; font-weight:800; cursor:pointer; }
+  .preset-add { display:flex; gap:8px; align-items:stretch; }
+  .preset-add input { flex:1; height:48px; border:1.5px solid var(--line); border-radius:12px; padding:0 14px; font-size:16px; outline:none; background:#fff; color:var(--ink); }
+  .preset-add input:focus { border-color:var(--acc); box-shadow:0 0 0 3px rgba(16,185,129,.18); }
+  .preset-add button { flex:0 0 auto; min-width:84px; height:48px; border:none; border-radius:12px; background:linear-gradient(135deg,#10b981,#0d9488); color:#fff; font-size:15px; font-weight:800; cursor:pointer; }
+
   /* ---------- login ---------- */
   #login-overlay {
     position:fixed; inset:0; z-index:80; display:none;
@@ -425,6 +473,8 @@
       <input id="search-input" type="text" placeholder="品名で検索" autocomplete="off">
       <button class="clear" id="search-clear" onclick="clearSearch()">✕</button>
     </div>
+    <button class="hd-btn ic" id="hd-undo" onclick="undoLast()" title="元に戻す" disabled>↶</button>
+    <button class="hd-btn ic" id="hd-redo" onclick="redoLast()" title="やり直す" disabled>↷</button>
     <button class="hd-btn" onclick="openHistory()">🕘 履歴</button>
     <button class="hd-btn" onclick="exportExcel()">📊 Excel</button>
     <button class="hd-btn" id="hd-logout" onclick="doLogout()" title="ログアウト">⏻</button>
@@ -436,6 +486,14 @@
   <button onclick="cancelMove()">キャンセル</button>
 </div>
 
+<div id="select-bar">
+  <span id="select-count">0 件選択中</span>
+  <div class="sb-btns">
+    <button onclick="startMultiMove()">選択したものを移動</button>
+    <button class="ghost2" onclick="exitSelectMode(true)">やめる</button>
+  </div>
+</div>
+
 <div id="search-panel"><div class="inner">
   <div class="sr-count" id="sr-count"></div>
   <div id="sr-results"></div>
@@ -444,10 +502,16 @@
 <main>
   <!-- home -->
   <div id="view-home">
-    <div class="stats">
-      <div class="stat"><b id="st-items">0</b><span>品を収納中</span></div>
-      <div class="stat"><b id="st-secs">0</b><span>/ 135 区画を使用</span></div>
-      <div class="stat"><b id="st-rate">0%</b><span>使用率</span></div>
+    <div class="stats-row">
+      <div class="stats">
+        <div class="stat"><b id="st-items">0</b><span>品を収納中</span></div>
+        <div class="stat"><b id="st-secs">0</b><span>/ 135 区画を使用</span></div>
+        <div class="stat"><b id="st-rate">0%</b><span>使用率</span></div>
+      </div>
+      <div class="recent-strip" id="recent-strip" style="display:none">
+        <span class="recent-label">最近の品名</span>
+        <div class="recent-chips" id="recent-chips"></div>
+      </div>
     </div>
     <div class="hint" id="home-hint">実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。</div>
     <div class="ov-wrap"><div class="ov-cols" id="ov-grid"></div></div>
@@ -462,6 +526,7 @@
         <div class="sec-count" id="sec-count"></div>
       </div>
       <div class="sec-nav">
+        <button id="sec-select-btn" class="sel-toggle" onclick="toggleSelectMode()">☑ 選択</button>
         <button onclick="stepSection(-1)">◀</button>
         <button onclick="stepSection(1)">▶</button>
       </div>
@@ -481,6 +546,7 @@
       <label>品名（必須）</label>
       <input type="text" id="mf-name" list="name-suggestions" autocomplete="off">
       <datalist id="name-suggestions"></datalist>
+      <div class="chips" id="mf-chips"></div>
     </div>
     <div class="fld" id="mf-qty-fld">
       <label>数量（左上から順に、1マスにつき1つずつ収納します）</label>
@@ -539,6 +605,24 @@
   </div>
 </div>
 
+<!-- presets modal -->
+<div class="modal-bg" id="m-presets">
+  <div class="modal">
+    <h2>よく使う品名の登録</h2>
+    <div class="fld">
+      <label>品名を追加（登録するとフォームでワンタップ入力できます）</label>
+      <div class="preset-add">
+        <input type="text" id="preset-input" autocomplete="off">
+        <button onclick="addPreset()">追加</button>
+      </div>
+    </div>
+    <div class="preset-list" id="preset-list"></div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="closeModal('m-presets')">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- history modal -->
 <div class="modal-bg" id="m-history">
   <div class="modal">
@@ -591,9 +675,10 @@ const ROWS = [1,2,3,4,5,6,7,8,9];
 const SUB = 9;
 
 // Firestore が正。state は各端末のミラー（onSnapshot で更新される）
-let state = { items: {}, labels: {} };
+let state = { items: {}, labels: {}, presets: [] };
 // items: { "A-3:2:5": {name, qty, note, addedAt, addedBy} }
 // labels: { "A-1": "やさい" }
+// presets: ["きゅうり", ...]（よく使う品名・全端末で共有）
 
 const keyOf = (sec, r, c) => `${sec}:${r}:${c}`;
 function parseKey(k) {
@@ -626,10 +711,15 @@ function daysAgoLabel(ts) {
 
 /* ================= views ================= */
 let currentSec = null;
-let moveFrom = null;       // item key being moved
+let moveFrom = null;       // item key being moved (single)
+let moveMulti = null;      // array of item keys being multi-moved
 let detailKey = null;      // key shown in detail modal
 let formTarget = null;     // {sec,r,c} for add, or key string for edit
 let highlightPos = null;   // {r,c} to pulse after opening section
+let selectMode = false;    // 複数選択モード
+let selected = new Set();  // 選択中の item キー（現在の区画）
+let recentNames = [];      // 最近登録された品名（最大5）
+let undoStack = [], redoStack = [];  // この端末のUndo/Redo
 
 function secItems(sec) {
   const out = [];
@@ -641,6 +731,7 @@ function secItems(sec) {
 }
 
 function goHome() {
+  if (selectMode) exitSelectMode(true);
   currentSec = null;
   document.getElementById('view-home').style.display = '';
   document.getElementById('view-section').style.display = 'none';
@@ -687,9 +778,11 @@ function renderHome() {
   if (!firstLoaded) hintEl.textContent = 'クラウドと同期しています…';
   else if (totalItems === 0) hintEl.textContent = 'まだ何も収納されていません。段をタップして収納を始めましょう（各コンテナは上から1〜9段）。';
   else hintEl.textContent = '実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。';
+  renderRecent();
 }
 
 function openSection(sec, hl) {
+  if (selectMode) exitSelectMode(true);
   currentSec = sec;
   highlightPos = hl || null;
   document.getElementById('view-home').style.display = 'none';
@@ -722,6 +815,9 @@ function renderSection() {
   const items = secItems(sec);
   document.getElementById('sec-count').textContent = `${items.length} / 81 マス使用中`;
 
+  const selBtn = document.getElementById('sec-select-btn');
+  if (selBtn) { selBtn.textContent = selectMode ? '選択中' : '☑ 選択'; selBtn.classList.toggle('active', selectMode); }
+
   const map = {};
   for (const it of items) map[`${it.r}:${it.c}`] = it;
 
@@ -734,7 +830,9 @@ function renderSection() {
       const pulse = highlightPos && highlightPos.r === r && highlightPos.c === c ? ' pulse' : '';
       if (it) {
         const qt = it.qty > 1 ? `<span class="qt">×${it.qty}</span>` : '';
-        html += `<div class="sub-cell filled${pulse}" onclick="tapCell(${r},${c})"><span class="nm">${esc(it.name)}</span>${qt}</div>`;
+        const sel = (selectMode && selected.has(`${sec}:${r}:${c}`)) ? ' selected' : '';
+        const badge = sel ? '<span class="checkbadge">✓</span>' : '';
+        html += `<div class="sub-cell filled${pulse}${sel}" onclick="tapCell(${r},${c})">${badge}<span class="nm">${esc(it.name)}</span>${qt}</div>`;
       } else {
         html += `<div class="sub-cell${pulse}" onclick="tapCell(${r},${c})"><span class="plus">＋</span></div>`;
       }
@@ -744,7 +842,9 @@ function renderSection() {
   highlightPos = null;
 
   const list = document.getElementById('sec-list');
-  if (items.length === 0) {
+  if (selectMode) {
+    list.innerHTML = '<h3>移動したい品物のマスをタップして選択してください（別区画へまとめて移動できます）。</h3><div style="height:10px"></div>';
+  } else if (items.length === 0) {
     list.innerHTML = '<h3>この区画は空です。マスをタップして収納できます。</h3><div style="height:10px"></div>';
   } else {
     list.innerHTML = '<h3>この区画の収納一覧</h3>' + items.map(it => `
@@ -759,6 +859,17 @@ function renderSection() {
 function tapCell(r, c) {
   const k = keyOf(currentSec, r, c);
   const it = state.items[k];
+  if (selectMode) {
+    if (!it) { showToast('品物のあるマスを選んでください'); return; }
+    if (selected.has(k)) selected.delete(k); else selected.add(k);
+    renderSection();
+    updateSelectBar();
+    return;
+  }
+  if (moveMulti) {
+    doMoveMulti(currentSec, r, c);
+    return;
+  }
   if (moveFrom) {
     if (it) { showToast('空いているマスをタップしてください'); return; }
     doMove(currentSec, r, c);
@@ -779,6 +890,7 @@ function openAddForm(sec, r, c) {
   document.getElementById('mf-note').value = '';
   document.getElementById('mf-qty-fld').style.display = '';
   updateSuggestions();
+  renderFormChips();
   openModal('m-form');
   setTimeout(() => document.getElementById('mf-name').focus(), 100);
 }
@@ -796,6 +908,7 @@ function openEdit() {
   document.getElementById('mf-note').value = it.note || '';
   document.getElementById('mf-qty-fld').style.display = 'none'; // 1マス=1品なので編集では数量を扱わない
   updateSuggestions();
+  renderFormChips();
   openModal('m-form');
 }
 
@@ -835,6 +948,9 @@ function submitForm() {
     batch.commit()
       .then(() => addHistory({ type: 'add', sec, r: fr, c: fc, name, qty: targets.length }))
       .catch(() => showToast('保存に失敗しました'));
+    pushUndo({ type: 'add', cells: targets.map(([rr, cc]) => ({
+      sec, r: rr, c: cc, item: { sec, r: rr, c: cc, name, qty: 1, note, addedAt: now, addedBy: currentUser.email }
+    })) });
     if (targets.length < qty) {
       showToast(`空きマスが足りず、「${name}」を ${targets.length} マスに収納しました`);
     } else if (targets.length >= 2) {
@@ -844,9 +960,13 @@ function submitForm() {
     }
   } else {
     const p = parseKey(formTarget.key);
-    itemRef(p.sec, p.r, p.c).update({ name, note })
+    const cur = state.items[formTarget.key] || {};
+    const before = { sec: p.sec, r: p.r, c: p.c, name: cur.name, qty: cur.qty || 1, note: cur.note || '', addedAt: cur.addedAt, addedBy: cur.addedBy || '' };
+    const after = Object.assign({}, before, { name, note });
+    itemRef(p.sec, p.r, p.c).set(after)
       .then(() => addHistory({ type: 'edit', sec: p.sec, r: p.r, c: p.c, name, qty: 1 }))
       .catch(() => showToast('更新に失敗しました'));
+    pushUndo({ type: 'edit', sec: p.sec, r: p.r, c: p.c, before, after });
     showToast('内容を更新しました');
   }
   closeModal('m-form');
@@ -893,9 +1013,11 @@ function consumeCell() {
   const it = state.items[detailKey];
   if (!it) return;
   const p = parseKey(detailKey);
+  const full = { sec: p.sec, r: p.r, c: p.c, name: it.name, qty: it.qty || 1, note: it.note || '', addedAt: it.addedAt, addedBy: it.addedBy || '' };
   itemRef(p.sec, p.r, p.c).delete()
     .then(() => addHistory({ type: 'consume', sec: p.sec, r: p.r, c: p.c, name: it.name, qty: it.qty || 1 }))
     .catch(() => showToast('消費の記録に失敗しました'));
+  pushUndo({ type: 'consume', cell: { sec: p.sec, r: p.r, c: p.c, item: full } });
   closeModal('m-detail');
   showToast(`「${it.name}」を消費しました（マスが空きました）`);
 }
@@ -912,6 +1034,7 @@ function startMove() {
 
 function cancelMove() {
   moveFrom = null;
+  moveMulti = null;
   document.getElementById('move-banner').style.display = 'none';
 }
 
@@ -919,16 +1042,17 @@ function doMove(sec, r, c) {
   const it = state.items[moveFrom];
   if (!it) { cancelMove(); return; }
   const from = parseKey(moveFrom);
+  const moves = [{
+    from: { sec: from.sec, r: from.r, c: from.c }, to: { sec, r, c },
+    item: { name: it.name, qty: it.qty || 1, note: it.note || '', addedAt: it.addedAt, addedBy: it.addedBy || (currentUser ? currentUser.email : '') }
+  }];
   const batch = db.batch();
-  batch.delete(itemRef(from.sec, from.r, from.c));
-  batch.set(itemRef(sec, r, c), {
-    sec, r, c, name: it.name, qty: it.qty || 1, note: it.note || '',
-    addedAt: it.addedAt || Date.now(), addedBy: it.addedBy || (currentUser ? currentUser.email : '')
-  });
+  applyMoves(batch, moves, false);
   batch.commit()
     .then(() => addHistory({ type: 'move', sec, r, c, name: it.name, qty: it.qty || 1,
              detail: `${from.sec} ${posLabel(from.r, from.c)} から` }))
     .catch(() => showToast('移動に失敗しました'));
+  pushUndo({ type: 'move', moves });
   cancelMove();
   showToast(`「${it.name}」を ${sec} ${posLabel(r, c)} に移動しました`);
 }
@@ -943,11 +1067,14 @@ function openLabelEdit() {
 
 function saveLabel() {
   const v = document.getElementById('ml-name').value.trim();
-  const ref = db.collection('labels').doc(currentSec);
+  const sec = currentSec;
+  const before = state.labels[sec] || null;
+  const ref = db.collection('labels').doc(sec);
   if (v) ref.set({ name: v }).catch(() => showToast('保存に失敗しました'));
   else ref.delete().catch(() => {});
+  pushUndo({ type: 'label', sec, before, after: v || null });
   closeModal('m-label');
-  showToast(v ? `区画 ${currentSec} に「${v}」と名前を付けました` : `区画 ${currentSec} の名前を消しました`);
+  showToast(v ? `区画 ${sec} に「${v}」と名前を付けました` : `区画 ${sec} の名前を消しました`);
 }
 
 /* ================= search ================= */
@@ -1104,6 +1231,213 @@ function buildExcelWorkbook() {
   return wb;
 }
 
+/* ================= move helpers (single & multi) ================= */
+function withPos(item, pos) {
+  return { sec: pos.sec, r: pos.r, c: pos.c, name: item.name, qty: item.qty || 1,
+           note: item.note || '', addedAt: item.addedAt || Date.now(), addedBy: item.addedBy || '' };
+}
+// moves: [{from:{sec,r,c}, to:{sec,r,c}, item:{name,qty,note,addedAt,addedBy}}]
+function applyMoves(batch, moves, reverse) {
+  const froms = moves.map(m => reverse ? m.to : m.from);
+  const tos = moves.map(m => reverse ? m.from : m.to);
+  const toKeys = new Set(tos.map(p => keyOf(p.sec, p.r, p.c)));
+  froms.forEach(p => { const fk = keyOf(p.sec, p.r, p.c); if (!toKeys.has(fk)) batch.delete(itemRef(p.sec, p.r, p.c)); });
+  moves.forEach((m, i) => batch.set(itemRef(tos[i].sec, tos[i].r, tos[i].c), withPos(m.item, tos[i])));
+}
+// (r,c)から読み順で n 個の「置ける」マスを集める。freed に含まれるキー（移動元）も空き扱い
+function emptyCellsForMove(sec, r, c, n, freed) {
+  const start = (r - 1) * SUB + (c - 1);
+  const out = [];
+  for (let idx = start; idx < SUB * SUB && out.length < n; idx++) {
+    const rr = Math.floor(idx / SUB) + 1, cc = (idx % SUB) + 1;
+    const k = keyOf(sec, rr, cc);
+    if (!state.items[k] || freed.has(k)) out.push([rr, cc]);
+  }
+  return out;
+}
+
+/* ================= multi-select move ================= */
+function toggleSelectMode() {
+  if (moveFrom || moveMulti) return;
+  if (selectMode) { exitSelectMode(true); return; }
+  selectMode = true; selected.clear();
+  renderSection(); updateSelectBar();
+}
+function exitSelectMode(clear) {
+  selectMode = false;
+  if (clear) selected.clear();
+  document.getElementById('select-bar').style.display = 'none';
+  if (currentSec) renderSection();
+}
+function updateSelectBar() {
+  const bar = document.getElementById('select-bar');
+  if (!selectMode) { bar.style.display = 'none'; return; }
+  document.getElementById('select-count').textContent = `${selected.size} 件選択中`;
+  bar.style.display = 'flex';
+}
+function startMultiMove() {
+  if (!selected.size) { showToast('移動する品物を選んでください'); return; }
+  moveMulti = [...selected];
+  selectMode = false;
+  document.getElementById('select-bar').style.display = 'none';
+  renderSection();
+  document.getElementById('move-msg').textContent =
+    `選択した ${moveMulti.length} 件の移動先の先頭マスをタップ（そこから順に埋めます・別区画も可）`;
+  document.getElementById('move-banner').style.display = 'flex';
+}
+function doMoveMulti(destSec, sr, sc) {
+  const movingKeys = moveMulti || [];
+  const movingItems = movingKeys
+    .map(k => Object.assign({ key: k }, parseKey(k), { data: state.items[k] }))
+    .filter(x => x.data);
+  if (!movingItems.length) { cancelMove(); return; }
+  movingItems.sort((a, b) => a.r - b.r || a.c - b.c);
+  const freed = new Set(movingKeys);
+  const dests = emptyCellsForMove(destSec, sr, sc, movingItems.length, freed);
+  if (dests.length < movingItems.length) {
+    showToast(`移動先の空きが ${movingItems.length} マス必要です（この位置からは ${dests.length} マスです）`);
+    return; // 移動モードのまま。別の位置をタップし直せる
+  }
+  const moves = movingItems.map((m, i) => {
+    const [rr, cc] = dests[i];
+    return {
+      from: { sec: m.sec, r: m.r, c: m.c }, to: { sec: destSec, r: rr, c: cc },
+      item: { name: m.data.name, qty: m.data.qty || 1, note: m.data.note || '',
+              addedAt: m.data.addedAt, addedBy: m.data.addedBy || (currentUser ? currentUser.email : '') }
+    };
+  }).filter(mv => !(mv.from.sec === mv.to.sec && mv.from.r === mv.to.r && mv.from.c === mv.to.c));
+  if (!moves.length) { showToast('移動先が元と同じ位置です'); cancelMove(); return; }
+  const batch = db.batch();
+  applyMoves(batch, moves, false);
+  batch.commit()
+    .then(() => addHistory({ type: 'move', sec: destSec, r: dests[0][0], c: dests[0][1],
+             name: `${movingItems.length}件`, qty: movingItems.length,
+             detail: `${movingItems[0].sec} などから一括移動` }))
+    .catch(() => showToast('移動に失敗しました'));
+  pushUndo({ type: 'move', moves });
+  cancelMove();
+  showToast(`${movingItems.length}件を ${destSec} に移動しました`);
+}
+
+/* ================= 最近の品名（ホーム） ================= */
+function renderRecent() {
+  const strip = document.getElementById('recent-strip');
+  const box = document.getElementById('recent-chips');
+  if (!strip || !box) return;
+  if (!recentNames.length) { strip.style.display = 'none'; return; }
+  box.innerHTML = recentNames.map(n => `<button type="button" class="chip" onclick="searchName(this)">${esc(n)}</button>`).join('');
+  strip.style.display = '';
+}
+function searchName(btn) {
+  searchInput.value = btn.textContent;
+  renderSearch();
+}
+
+/* ================= 品名プリセット ================= */
+function renderFormChips() {
+  const box = document.getElementById('mf-chips');
+  if (!box) return;
+  const seen = new Set();
+  const chips = [];
+  state.presets.forEach(n => { if (n && !seen.has(n)) { seen.add(n); chips.push({ n, recent: false }); } });
+  recentNames.forEach(n => { if (n && !seen.has(n)) { seen.add(n); chips.push({ n, recent: true }); } });
+  let html = chips.map(ch => `<button type="button" class="chip${ch.recent ? ' recent' : ''}" onclick="pickName(this)">${esc(ch.n)}</button>`).join('');
+  html += `<button type="button" class="chip edit" onclick="openPresets()">＋ 品名を登録</button>`;
+  box.innerHTML = html;
+}
+function pickName(btn) {
+  document.getElementById('mf-name').value = btn.textContent;
+}
+function openPresets() {
+  renderPresetList();
+  openModal('m-presets');
+  setTimeout(() => document.getElementById('preset-input').focus(), 100);
+}
+function renderPresetList() {
+  const box = document.getElementById('preset-list');
+  if (!box) return;
+  if (!state.presets.length) {
+    box.innerHTML = '<div class="sr-none" style="padding:18px 0">まだ登録がありません</div>';
+    return;
+  }
+  box.innerHTML = state.presets.map((n, i) =>
+    `<div class="preset-row"><span>${esc(n)}</span><button onclick="removePresetAt(${i})" title="削除">×</button></div>`).join('');
+}
+function addPreset() {
+  const inp = document.getElementById('preset-input');
+  const v = inp.value.trim();
+  if (!v) return;
+  if (state.presets.includes(v)) { showToast('すでに登録されています'); inp.value = ''; return; }
+  savePresets([...state.presets, v]);
+  inp.value = '';
+  inp.focus();
+}
+function removePresetAt(i) {
+  const arr = state.presets.slice();
+  arr.splice(i, 1);
+  savePresets(arr);
+}
+function savePresets(arr) {
+  if (!db) return;
+  state.presets = arr; // 楽観更新
+  renderPresetList();
+  if (document.getElementById('m-form').classList.contains('show')) renderFormChips();
+  db.collection('meta').doc('presets').set({ names: arr }).catch(() => showToast('保存に失敗しました'));
+}
+
+/* ================= Undo / Redo（この端末のみ） ================= */
+function pushUndo(op) {
+  undoStack.push(op);
+  if (undoStack.length > 40) undoStack.shift();
+  redoStack.length = 0;
+  updateUndoUI();
+}
+function updateUndoUI() {
+  const u = document.getElementById('hd-undo'), r = document.getElementById('hd-redo');
+  if (u) u.disabled = !undoStack.length;
+  if (r) r.disabled = !redoStack.length;
+}
+function execOp(op, dir) { // dir: 'redo' | 'undo'
+  const batch = db.batch();
+  if (op.type === 'add') {
+    op.cells.forEach(cell => {
+      const ref = itemRef(cell.sec, cell.r, cell.c);
+      if (dir === 'redo') batch.set(ref, cell.item); else batch.delete(ref);
+    });
+  } else if (op.type === 'consume') {
+    const ref = itemRef(op.cell.sec, op.cell.r, op.cell.c);
+    if (dir === 'redo') batch.delete(ref); else batch.set(ref, op.cell.item);
+  } else if (op.type === 'edit') {
+    const ref = itemRef(op.sec, op.r, op.c);
+    batch.set(ref, dir === 'redo' ? op.after : op.before);
+  } else if (op.type === 'move') {
+    applyMoves(batch, op.moves, dir === 'undo');
+  } else if (op.type === 'label') {
+    const ref = db.collection('labels').doc(op.sec);
+    const val = dir === 'redo' ? op.after : op.before;
+    if (val) batch.set(ref, { name: val }); else batch.delete(ref);
+  } else {
+    return Promise.resolve();
+  }
+  return batch.commit();
+}
+function undoLast() {
+  if (!undoStack.length || !db) return;
+  const op = undoStack.pop();
+  updateUndoUI();
+  execOp(op, 'undo')
+    .then(() => { redoStack.push(op); updateUndoUI(); showToast('元に戻しました'); })
+    .catch(() => { undoStack.push(op); updateUndoUI(); showToast('元に戻せませんでした'); });
+}
+function redoLast() {
+  if (!redoStack.length || !db) return;
+  const op = redoStack.pop();
+  updateUndoUI();
+  execOp(op, 'redo')
+    .then(() => { undoStack.push(op); updateUndoUI(); showToast('やり直しました'); })
+    .catch(() => { redoStack.push(op); updateUndoUI(); showToast('やり直せませんでした'); });
+}
+
 /* ================= common ui ================= */
 function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
@@ -1118,6 +1452,9 @@ document.getElementById('mf-name').addEventListener('keydown', e => {
 });
 document.getElementById('ml-name').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); saveLabel(); }
+});
+document.getElementById('preset-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addPreset(); }
 });
 ['login-email', 'login-pass'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => {
@@ -1142,7 +1479,7 @@ function esc(s) {
 /* ================= Firebase / sync ================= */
 let auth = null, db = null;
 let currentUser = null;
-let unsubItems = null, unsubLabels = null;
+let unsubItems = null, unsubLabels = null, unsubPresets = null, unsubRecent = null;
 let firstLoaded = false;
 
 const itemId = (sec, r, c) => `${sec}_${r}_${c}`;
@@ -1167,10 +1504,25 @@ function startSync() {
     snap.forEach(doc => { m[doc.id] = doc.data().name; });
     state.labels = m; rerender();
   }, () => {});
+  unsubPresets = db.collection('meta').doc('presets').onSnapshot(doc => {
+    state.presets = (doc.exists && Array.isArray(doc.data().names)) ? doc.data().names : [];
+    if (document.getElementById('m-presets').classList.contains('show')) renderPresetList();
+    if (document.getElementById('m-form').classList.contains('show')) renderFormChips();
+  }, () => {});
+  // 最近登録した品名（履歴の直近30件から add を抽出。複合インデックス不要）
+  unsubRecent = db.collection('history').orderBy('ts', 'desc').limit(30).onSnapshot(snap => {
+    const seen = new Set(), names = [];
+    snap.forEach(d => { const h = d.data(); if (h.type === 'add' && h.name && !seen.has(h.name)) { seen.add(h.name); names.push(h.name); } });
+    recentNames = names.slice(0, 5);
+    renderRecent();
+    if (document.getElementById('m-form').classList.contains('show')) renderFormChips();
+  }, () => {});
 }
 function stopSync() {
   if (unsubItems) { unsubItems(); unsubItems = null; }
   if (unsubLabels) { unsubLabels(); unsubLabels = null; }
+  if (unsubPresets) { unsubPresets(); unsubPresets = null; }
+  if (unsubRecent) { unsubRecent(); unsubRecent = null; }
 }
 function rerender() {
   if (currentSec) renderSection(); else renderHome();
@@ -1230,7 +1582,12 @@ function initFirebase() {
       startSync();
     } else {
       stopSync();
-      state.items = {}; state.labels = {}; firstLoaded = false;
+      state.items = {}; state.labels = {}; state.presets = []; recentNames = [];
+      firstLoaded = false;
+      selectMode = false; selected.clear(); moveFrom = null; moveMulti = null;
+      undoStack.length = 0; redoStack.length = 0; updateUndoUI();
+      document.getElementById('select-bar').style.display = 'none';
+      document.getElementById('move-banner').style.display = 'none';
       goHome();
       ov.classList.add('show');
     }
