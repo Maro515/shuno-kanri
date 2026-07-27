@@ -448,6 +448,138 @@
   .preset-add input:focus { border-color:var(--acc); box-shadow:0 0 0 3px rgba(16,185,129,.18); }
   .preset-add button { flex:0 0 auto; min-width:84px; height:48px; border:none; border-radius:12px; background:linear-gradient(135deg,#10b981,#0d9488); color:#fff; font-size:15px; font-weight:800; cursor:pointer; }
 
+  /* ---------- home mode tabs ---------- */
+  .mode-tabs {
+    display:flex; gap:6px; background:#cdd9e5; border:1.5px solid var(--line2);
+    padding:5px; border-radius:14px; margin-bottom:14px; width:100%; max-width:540px;
+  }
+  .mode-tab {
+    flex:1; height:50px; border:none; border-radius:10px; background:transparent;
+    color:#41586f; font-size:15px; font-weight:800; cursor:pointer;
+  }
+  .mode-tab.active {
+    background:linear-gradient(135deg,#1c3556,#12253c); color:#fff;
+    box-shadow:0 4px 12px rgba(16,42,72,.35);
+  }
+
+  /* ---------- recipe list ---------- */
+  .rc-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; flex-wrap:wrap; }
+  .rc-new {
+    height:50px; padding:0 20px; border:none; border-radius:12px;
+    background:linear-gradient(135deg,#10b981,#047857); color:#fff;
+    font-size:15px; font-weight:800; cursor:pointer;
+    box-shadow:0 4px 14px rgba(5,150,105,.45);
+  }
+  .rc-list { background:#fff; border:1px solid var(--line2); border-radius:18px; overflow:hidden; box-shadow:var(--shadow); }
+  .rc-row { display:flex; align-items:center; gap:12px; padding:14px 16px; border-top:1px solid var(--line2); cursor:pointer; }
+  .rc-row:first-child { border-top:none; }
+  .rc-row:active { background:#e3ebf3; }
+  .rc-icon {
+    flex:0 0 42px; width:42px; height:42px; border-radius:11px;
+    background:linear-gradient(135deg,#6366f1,#4338ca);
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    box-shadow:0 3px 10px rgba(67,56,202,.35);
+  }
+  .rc-t { flex:1; min-width:0; }
+  .rc-title { font-size:16px; font-weight:800; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rc-meta { font-size:12px; color:var(--sub); font-weight:600; margin-top:2px; }
+  .rc-chev { color:#93a9c0; font-weight:900; font-size:18px; }
+  .rc-empty { text-align:center; color:var(--sub); padding:38px 14px; font-size:14.5px; font-weight:600; }
+
+  /* ---------- recipe detail ---------- */
+  .rd-steps { display:flex; flex-direction:column; gap:12px; max-width:860px; }
+  .step-card {
+    background:#fff; border:1.5px solid var(--line2); border-radius:16px;
+    padding:14px 16px; box-shadow:var(--shadow); display:flex; gap:12px; align-items:flex-start;
+  }
+  .step-no {
+    flex:0 0 34px; width:34px; height:34px; border-radius:10px;
+    background:linear-gradient(135deg,#1c3556,#12253c); color:#fff;
+    font-weight:900; display:flex; align-items:center; justify-content:center; font-size:16px;
+  }
+  .step-body { flex:1; min-width:0; }
+  .step-text { font-size:15.5px; font-weight:700; color:var(--ink); line-height:1.55; white-space:pre-wrap; word-break:break-word; }
+  .step-note {
+    margin-top:7px; font-size:13px; color:#3730a3; background:rgba(99,102,241,.10);
+    border-left:3px solid #6366f1; padding:6px 10px; border-radius:0 8px 8px 0; font-weight:600;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .step-time {
+    display:inline-block; margin-top:8px; font-size:12.5px; font-weight:800;
+    color:#064e3b; background:#d1fae5; border:1.5px solid rgba(5,150,105,.4);
+    border-radius:999px; padding:4px 12px;
+  }
+  .step-thumb {
+    flex:0 0 86px; width:86px; height:86px; border-radius:12px; object-fit:cover;
+    border:2px solid var(--line2); cursor:zoom-in; background:#eef3f8;
+  }
+  .pause-band { margin-left:16px; border-left:3px dashed #f59e0b; padding:2px 0 2px 16px; }
+  .pause-chip {
+    display:inline-block; background:#fef3c7; border:1.5px solid #f59e0b; color:#92400e;
+    border-radius:10px; padding:8px 13px; font-size:13px; font-weight:700;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .sec-nav .save-btn {
+    width:auto; padding:0 16px; font-size:13.5px; font-weight:800; white-space:nowrap;
+    background:linear-gradient(135deg,#10b981,#047857); color:#fff; border:none;
+    box-shadow:0 4px 12px rgba(5,150,105,.40);
+  }
+  .sec-nav .danger-btn {
+    width:auto; padding:0 14px; font-size:15px;
+    background:linear-gradient(135deg,#f43f5e,#e11d48); color:#fff; border:none;
+    box-shadow:0 4px 12px rgba(225,29,72,.40);
+  }
+
+  /* ---------- recipe editor ---------- */
+  .re-wrap { display:flex; flex-direction:column; max-width:860px; }
+  .re-card {
+    background:#fff; border:1.5px solid var(--line2); border-radius:16px;
+    padding:16px; box-shadow:var(--shadow); margin-bottom:12px;
+  }
+  .re-step-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .re-step-no {
+    width:30px; height:30px; border-radius:9px;
+    background:linear-gradient(135deg,#1c3556,#12253c); color:#fff;
+    font-weight:900; display:flex; align-items:center; justify-content:center; font-size:14px;
+  }
+  .re-step-label { font-weight:800; color:var(--navy); font-size:15px; }
+  .re-step-tools { margin-left:auto; display:flex; gap:6px; }
+  .re-mini {
+    width:40px; height:40px; border:1.5px solid var(--line); border-radius:9px;
+    background:#fff; font-weight:800; font-size:15px; color:var(--navy); cursor:pointer;
+  }
+  .re-mini:disabled { opacity:.3; }
+  .re-mini.del { color:var(--rose); border-color:rgba(225,29,72,.4); }
+  .re-text {
+    width:100%; min-height:76px; border:1.5px solid var(--line); border-radius:12px;
+    padding:11px 14px; font-size:16px; background:#fff; color:var(--ink);
+    outline:none; font-family:inherit; resize:vertical; -webkit-appearance:none; appearance:none;
+  }
+  .re-text:focus { border-color:var(--acc); box-shadow:0 0 0 3px rgba(16,185,129,.18); }
+  .re-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
+  @media (max-width:560px) { .re-grid2 { grid-template-columns:1fr; } }
+  .re-img-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .re-img-prev { width:76px; height:76px; border-radius:10px; object-fit:cover; border:2px solid var(--line2); background:#eef3f8; }
+  .re-img-btn {
+    height:42px; padding:0 15px; border:1.5px dashed var(--line); border-radius:10px;
+    background:#fff; font-weight:700; font-size:13.5px; color:#41586f; cursor:pointer;
+  }
+  .re-img-btn.del { color:var(--rose); border-color:rgba(225,29,72,.4); }
+  .re-add-step {
+    width:100%; height:56px; border:2px dashed rgba(20,48,80,.35); border-radius:14px;
+    background:rgba(255,255,255,.75); color:#2a4464; font-size:15px; font-weight:800; cursor:pointer;
+  }
+  .re-add-step:active { background:#e3ebf3; }
+
+  /* ---------- lightbox ---------- */
+  #lightbox {
+    display:none; position:fixed; inset:0; z-index:90;
+    background:rgba(8,18,32,.90); align-items:center; justify-content:center;
+    padding:22px; cursor:zoom-out;
+  }
+  #lightbox.show { display:flex; }
+  #lightbox img { max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.55); }
+
   /* ---------- login ---------- */
   #login-overlay {
     position:fixed; inset:0; z-index:80; display:none;
@@ -521,6 +653,12 @@
 <main>
   <!-- home -->
   <div id="view-home">
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-freezer" onclick="setHomeTab('freezer')">🧊 フリーザー管理</button>
+      <button class="mode-tab" id="tab-recipes" onclick="setHomeTab('recipes')">📋 手順書一覧</button>
+    </div>
+
+    <div id="home-freezer">
     <div class="stats-row">
       <div class="stats">
         <div class="stat"><b id="st-items">0</b><span>品を収納中</span></div>
@@ -534,6 +672,15 @@
     </div>
     <div class="hint" id="home-hint">実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。</div>
     <div class="ov-wrap"><div class="ov-cols" id="ov-grid"></div></div>
+    </div><!-- /home-freezer -->
+
+    <div id="home-recipes" style="display:none">
+      <div class="rc-toolbar">
+        <div class="hint" style="margin:0">作業の手順書を登録して、いつでも見返せます。</div>
+        <button class="rc-new" onclick="openRecipeEdit(null)">＋ 新しい手順書</button>
+      </div>
+      <div class="rc-list" id="rc-list"></div>
+    </div>
   </div>
 
   <!-- section -->
@@ -553,6 +700,39 @@
     <div class="sec-body">
       <div class="sub-wrap"><div class="sub-grid" id="sub-grid"></div></div>
       <div class="sec-list" id="sec-list"></div>
+    </div>
+  </div>
+
+  <!-- recipe detail -->
+  <div id="view-recipe" style="display:none">
+    <div class="sec-bar">
+      <button class="back" onclick="goHome()">← 一覧</button>
+      <div>
+        <div class="sec-title"><span id="rd-title"></span></div>
+        <div class="sec-count" id="rd-meta"></div>
+      </div>
+      <div class="sec-nav">
+        <button class="sel-toggle" onclick="openRecipeEdit(currentRecipeId)">✏️ 編集</button>
+        <button class="danger-btn" onclick="deleteRecipe()" title="この手順書を削除">🗑</button>
+      </div>
+    </div>
+    <div class="rd-steps" id="rd-steps"></div>
+  </div>
+
+  <!-- recipe editor -->
+  <div id="view-recipe-edit" style="display:none">
+    <div class="sec-bar">
+      <button class="back" onclick="cancelRecipeEdit()">✕ キャンセル</button>
+      <div><div class="sec-title" id="re-heading">新しい手順書</div></div>
+      <div class="sec-nav">
+        <button class="save-btn" id="re-save-btn" onclick="saveRecipe()">💾 保存する</button>
+      </div>
+    </div>
+    <div class="re-wrap">
+      <div class="fld" style="margin-bottom:16px"><label>手順書のタイトル（必須）</label>
+        <input type="text" id="re-title" autocomplete="off"></div>
+      <div id="re-steps"></div>
+      <button class="re-add-step" onclick="addEditStep()">＋ 手順を追加</button>
     </div>
   </div>
 </main>
@@ -669,6 +849,8 @@
   </div>
 </div>
 
+<div id="lightbox" onclick="closeLightbox()"><img id="lightbox-img" alt=""></div>
+
 <div id="toast"></div>
 
 <!-- login overlay -->
@@ -710,10 +892,12 @@ const ROWS = [1,2,3,4,5,6,7,8,9];
 const SUB = 9;
 
 // Firestore が正。state は各端末のミラー（onSnapshot で更新される）
-let state = { items: {}, labels: {}, presets: [] };
+let state = { items: {}, labels: {}, presets: [], recipes: {} };
 // items: { "A-3:2:5": {name, qty, note, addedAt, addedBy} }
 // labels: { "A-1": "やさい" }
 // presets: ["きゅうり", ...]（よく使う品名・全端末で共有）
+// recipes: { id: {title, steps:[{text,note,minutes,pause,imageId}], createdAt, createdBy, updatedAt, updatedBy} }
+// 画像は recipeImages/{id} = {data: dataURL, recipeId, ts}（縮小してFirestoreに保存・Storage不要）
 
 const keyOf = (sec, r, c) => `${sec}:${r}:${c}`;
 function parseKey(k) {
@@ -755,6 +939,12 @@ let selectMode = false;    // 複数選択モード
 let selected = new Set();  // 選択中の item キー（現在の区画）
 let recentNames = [];      // 最近登録された品名（最大5）
 let bulkRenameKeys = null; // 一括名前変更の対象キー
+let homeTab = localStorage.getItem('shuno-tab') || 'freezer'; // ホームのタブ
+let currentRecipeId = null;   // 開いている手順書
+let editingRecipeId = null;   // 編集中の手順書（null=新規）
+let editSteps = [];           // 編集中の手順配列
+let editDirty = false;        // 編集フォームに未保存の変更があるか
+const imgCache = {};          // recipeImages のメモリキャッシュ
 let undoStack = [], redoStack = [];  // この端末のUndo/Redo
 
 function secItems(sec) {
@@ -766,14 +956,35 @@ function secItems(sec) {
   return out;
 }
 
+function showView(id) {
+  ['view-home', 'view-section', 'view-recipe', 'view-recipe-edit'].forEach(v => {
+    document.getElementById(v).style.display = (v === id) ? '' : 'none';
+  });
+}
+function viewVisible(id) { return document.getElementById(id).style.display !== 'none'; }
+
 function goHome() {
   if (selectMode) exitSelectMode(true);
   currentSec = null;
-  document.getElementById('view-home').style.display = '';
-  document.getElementById('view-section').style.display = 'none';
+  currentRecipeId = null;
+  showView('view-home');
   document.getElementById('hd-label').textContent = '区画収納';
-  renderHome();
+  applyHomeTab();
   window.scrollTo(0, 0);
+}
+
+function setHomeTab(t) {
+  homeTab = t;
+  localStorage.setItem('shuno-tab', t);
+  applyHomeTab();
+}
+function applyHomeTab() {
+  const fz = homeTab === 'freezer';
+  document.getElementById('tab-freezer').classList.toggle('active', fz);
+  document.getElementById('tab-recipes').classList.toggle('active', !fz);
+  document.getElementById('home-freezer').style.display = fz ? '' : 'none';
+  document.getElementById('home-recipes').style.display = fz ? 'none' : '';
+  if (fz) renderHome(); else renderRecipeList();
 }
 
 /* physical layout: containers stacked in columns of 3, rightmost slot is spare space */
@@ -820,9 +1031,9 @@ function renderHome() {
 function openSection(sec, hl) {
   if (selectMode) exitSelectMode(true);
   currentSec = sec;
+  currentRecipeId = null;
   highlightPos = hl || null;
-  document.getElementById('view-home').style.display = 'none';
-  document.getElementById('view-section').style.display = '';
+  showView('view-section');
   document.getElementById('hd-label').textContent = sec;
   renderSection();
   window.scrollTo(0, 0);
@@ -1541,6 +1752,300 @@ function redoLast() {
     .catch(() => { redoStack.push(op); updateUndoUI(); showToast('やり直せませんでした'); });
 }
 
+/* ================= 手順書（レシピ帳） ================= */
+function renderRecipeList() {
+  const box = document.getElementById('rc-list');
+  const arr = Object.keys(state.recipes).map(id => Object.assign({ id }, state.recipes[id]));
+  arr.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  if (!arr.length) {
+    box.innerHTML = `<div class="rc-empty">${firstLoaded ? 'まだ手順書がありません。「＋ 新しい手順書」から作成できます。' : 'クラウドと同期しています…'}</div>`;
+    return;
+  }
+  box.innerHTML = arr.map(r => {
+    const n = (r.steps || []).length;
+    const who = r.updatedBy ? '　・　' + esc(String(r.updatedBy).split('@')[0]) : '';
+    return `
+    <div class="rc-row" onclick="openRecipe('${r.id}')">
+      <div class="rc-icon">📋</div>
+      <div class="rc-t">
+        <div class="rc-title">${esc(r.title || '(無題)')}</div>
+        <div class="rc-meta">${n} 手順　・　更新 ${fmtDate(r.updatedAt || r.createdAt || Date.now())}${who}</div>
+      </div>
+      <span class="rc-chev">›</span>
+    </div>`;
+  }).join('');
+}
+
+function openRecipe(id) {
+  currentRecipeId = id;
+  currentSec = null;
+  showView('view-recipe');
+  document.getElementById('hd-label').textContent = '手順書';
+  renderRecipeDetail();
+  window.scrollTo(0, 0);
+}
+
+function renderRecipeDetail() {
+  const r = state.recipes[currentRecipeId];
+  if (!r) return;
+  document.getElementById('rd-title').textContent = r.title || '(無題)';
+  const who = r.updatedBy ? '　・　' + String(r.updatedBy).split('@')[0] : '';
+  const steps = r.steps || [];
+  document.getElementById('rd-meta').textContent =
+    `${steps.length} 手順　・　更新 ${fmtDate(r.updatedAt || r.createdAt || Date.now())}${who}`;
+  let html = '';
+  steps.forEach((s, i) => {
+    html += `
+    <div class="step-card">
+      <div class="step-no">${i + 1}</div>
+      <div class="step-body">
+        <div class="step-text">${esc(s.text || '')}</div>
+        ${s.note ? `<div class="step-note">📝 ${esc(s.note)}</div>` : ''}
+        ${s.minutes ? `<span class="step-time">⏱ ${esc(s.minutes)}</span>` : ''}
+      </div>
+      ${s.imageId ? `<img class="step-thumb" id="rd-thumb-${i}" alt="手順${i + 1}の画像" onclick="openLightbox('${s.imageId}')">` : ''}
+    </div>`;
+    if (s.pause) html += `<div class="pause-band"><span class="pause-chip">⏸ ここで中断OK：${esc(s.pause)}</span></div>`;
+  });
+  document.getElementById('rd-steps').innerHTML = html || '<div class="rc-empty">手順がありません</div>';
+  steps.forEach((s, i) => {
+    if (s.imageId) getImage(s.imageId).then(d => {
+      const el = document.getElementById('rd-thumb-' + i);
+      if (el && d) el.src = d;
+    });
+  });
+}
+
+function getImage(id) {
+  if (imgCache[id] !== undefined) return Promise.resolve(imgCache[id]);
+  if (!db) return Promise.resolve(null);
+  return db.collection('recipeImages').doc(id).get()
+    .then(doc => { const d = doc.exists ? doc.data().data : null; imgCache[id] = d; return d; })
+    .catch(() => null);
+}
+
+function openLightbox(imgId) {
+  getImage(imgId).then(d => {
+    if (!d) { showToast('画像を読み込めませんでした'); return; }
+    document.getElementById('lightbox-img').src = d;
+    document.getElementById('lightbox').classList.add('show');
+  });
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+  document.getElementById('lightbox-img').removeAttribute('src');
+}
+
+function deleteRecipe() {
+  const r = state.recipes[currentRecipeId];
+  if (!r || !db) return;
+  if (!confirm(`手順書「${r.title}」を削除します。よろしいですか？`)) return;
+  const batch = db.batch();
+  batch.delete(db.collection('recipes').doc(currentRecipeId));
+  (r.steps || []).forEach(s => { if (s.imageId) batch.delete(db.collection('recipeImages').doc(s.imageId)); });
+  batch.commit().catch(() => showToast('削除に失敗しました'));
+  goHome();
+  showToast('手順書を削除しました');
+}
+
+/* ---------- 手順書エディタ ---------- */
+function blankStep() { return { text: '', note: '', minutes: '', pause: '', imageId: null, imageData: null, removeImage: false }; }
+
+function openRecipeEdit(id) {
+  editDirty = false;
+  if (id && state.recipes[id]) {
+    editingRecipeId = id;
+    const r = state.recipes[id];
+    document.getElementById('re-heading').textContent = '手順書を編集';
+    document.getElementById('re-title').value = r.title || '';
+    editSteps = (r.steps || []).map(s => ({
+      text: s.text || '', note: s.note || '', minutes: s.minutes || '', pause: s.pause || '',
+      imageId: s.imageId || null, imageData: null, removeImage: false
+    }));
+    if (!editSteps.length) editSteps = [blankStep()];
+  } else {
+    editingRecipeId = null;
+    document.getElementById('re-heading').textContent = '新しい手順書';
+    document.getElementById('re-title').value = '';
+    editSteps = [blankStep()];
+  }
+  currentSec = null;
+  showView('view-recipe-edit');
+  document.getElementById('hd-label').textContent = '手順書';
+  renderEditSteps();
+  window.scrollTo(0, 0);
+}
+
+function renderEditSteps() {
+  const box = document.getElementById('re-steps');
+  box.innerHTML = editSteps.map((s, i) => {
+    let imgHtml;
+    if (s.imageData) {
+      imgHtml = `<img class="re-img-prev" src="${s.imageData}" alt="">
+        <button type="button" class="re-img-btn" onclick="pickStepImage(${i})">変更</button>
+        <button type="button" class="re-img-btn del" onclick="removeStepImage(${i})">削除</button>`;
+    } else if (s.imageId && !s.removeImage) {
+      imgHtml = `<img class="re-img-prev" id="re-prev-${i}" alt="">
+        <button type="button" class="re-img-btn" onclick="pickStepImage(${i})">変更</button>
+        <button type="button" class="re-img-btn del" onclick="removeStepImage(${i})">削除</button>`;
+    } else {
+      imgHtml = `<button type="button" class="re-img-btn" onclick="pickStepImage(${i})">📷 画像を追加</button>`;
+    }
+    return `
+    <div class="re-card">
+      <div class="re-step-head">
+        <div class="re-step-no">${i + 1}</div>
+        <span class="re-step-label">手順 ${i + 1}</span>
+        <div class="re-step-tools">
+          <button type="button" class="re-mini" onclick="moveEditStep(${i},-1)" ${i === 0 ? 'disabled' : ''} title="上へ">↑</button>
+          <button type="button" class="re-mini" onclick="moveEditStep(${i},1)" ${i === editSteps.length - 1 ? 'disabled' : ''} title="下へ">↓</button>
+          <button type="button" class="re-mini del" onclick="removeEditStep(${i})" title="この手順を削除">✕</button>
+        </div>
+      </div>
+      <div class="fld"><label>手順の内容（必須）</label>
+        <textarea class="re-text" oninput="updStep(${i},'text',this.value)">${esc(s.text)}</textarea></div>
+      <div class="re-grid2">
+        <div class="fld"><label>所要時間（例: 10分）</label>
+          <input type="text" value="${esc(s.minutes)}" oninput="updStep(${i},'minutes',this.value)" autocomplete="off"></div>
+        <div class="fld"><label>注釈（補足・コツなど）</label>
+          <input type="text" value="${esc(s.note)}" oninput="updStep(${i},'note',this.value)" autocomplete="off"></div>
+      </div>
+      <div class="fld"><label>この手順のあと放置できる場合、その条件と時間（例: 冷蔵で一晩まで）。できない場合は空欄</label>
+        <input type="text" value="${esc(s.pause)}" oninput="updStep(${i},'pause',this.value)" autocomplete="off"></div>
+      <div class="fld" style="margin-bottom:0"><label>画像</label>
+        <div class="re-img-row">${imgHtml}</div>
+        <input type="file" id="re-file-${i}" accept="image/*" style="display:none" onchange="onStepImage(${i},this)">
+      </div>
+    </div>`;
+  }).join('');
+  editSteps.forEach((s, i) => {
+    if (s.imageId && !s.removeImage && !s.imageData) {
+      getImage(s.imageId).then(d => {
+        const el = document.getElementById('re-prev-' + i);
+        if (el && d) el.src = d;
+      });
+    }
+  });
+}
+
+function updStep(i, f, v) { editSteps[i][f] = v; editDirty = true; }
+function addEditStep() { editSteps.push(blankStep()); editDirty = true; renderEditSteps(); }
+function removeEditStep(i) {
+  if (editSteps.length === 1) editSteps = [blankStep()];
+  else editSteps.splice(i, 1);
+  editDirty = true;
+  renderEditSteps();
+}
+function moveEditStep(i, d) {
+  const j = i + d;
+  if (j < 0 || j >= editSteps.length) return;
+  const t = editSteps[i]; editSteps[i] = editSteps[j]; editSteps[j] = t;
+  editDirty = true;
+  renderEditSteps();
+}
+function pickStepImage(i) { document.getElementById('re-file-' + i).click(); }
+function onStepImage(i, input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  resizeImage(f).then(dataUrl => {
+    editSteps[i].imageData = dataUrl;
+    editSteps[i].removeImage = false;
+    editDirty = true;
+    renderEditSteps();
+  }).catch(() => showToast('画像を読み込めませんでした'));
+}
+function removeStepImage(i) {
+  editSteps[i].imageData = null;
+  if (editSteps[i].imageId) editSteps[i].removeImage = true;
+  editDirty = true;
+  renderEditSteps();
+}
+
+/* 画像を縮小してJPEGのdataURLに（Firestoreの1MB制限に収める） */
+function resizeImage(file, maxDim, quality) {
+  maxDim = maxDim || 800; quality = quality || 0.7;
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const sc = Math.min(1, maxDim / Math.max(w, h));
+      w = Math.max(1, Math.round(w * sc)); h = Math.max(1, Math.round(h * sc));
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(cv.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+    img.src = url;
+  });
+}
+
+function saveRecipe() {
+  if (!db) return;
+  const title = document.getElementById('re-title').value.trim();
+  if (!title) { showToast('タイトルを入力してください'); return; }
+  const steps = editSteps.filter(s => s.text.trim());
+  if (!steps.length) { showToast('手順を1つ以上入力してください'); return; }
+  const btn = document.getElementById('re-save-btn');
+  btn.disabled = true; btn.textContent = '保存中…';
+
+  const recipeRef = editingRecipeId ? db.collection('recipes').doc(editingRecipeId) : db.collection('recipes').doc();
+  // 置き換え・削除された旧画像を回収
+  const toDelete = [];
+  editSteps.forEach(s => { if (s.imageId && (s.removeImage || s.imageData)) toDelete.push(s.imageId); });
+  if (editingRecipeId && state.recipes[editingRecipeId]) {
+    const kept = new Set(steps.filter(s => !s.removeImage && !s.imageData).map(s => s.imageId).filter(Boolean));
+    (state.recipes[editingRecipeId].steps || []).forEach(s => {
+      if (s.imageId && !kept.has(s.imageId) && !toDelete.includes(s.imageId)) toDelete.push(s.imageId);
+    });
+  }
+  // 新しい画像を順番にアップロード → 各手順の最終imageIdを確定
+  const jobs = steps.map(s => () => {
+    if (s.imageData) {
+      return db.collection('recipeImages').add({ data: s.imageData, recipeId: recipeRef.id, ts: Date.now() })
+        .then(ref => { imgCache[ref.id] = s.imageData; s._img = ref.id; });
+    }
+    s._img = s.removeImage ? null : (s.imageId || null);
+    return Promise.resolve();
+  });
+  jobs.reduce((p, f) => p.then(f), Promise.resolve())
+    .then(() => {
+      const clean = steps.map(s => ({
+        text: s.text.trim(), note: (s.note || '').trim(), minutes: (s.minutes || '').trim(),
+        pause: (s.pause || '').trim(), imageId: s._img || null
+      }));
+      const now = Date.now();
+      const me = currentUser ? currentUser.email : '';
+      const data = { title, steps: clean, updatedAt: now, updatedBy: me };
+      if (!editingRecipeId) { data.createdAt = now; data.createdBy = me; }
+      return recipeRef.set(data, { merge: true });
+    })
+    .then(() => {
+      if (toDelete.length) {
+        const b = db.batch();
+        toDelete.forEach(x => { b.delete(db.collection('recipeImages').doc(x)); delete imgCache[x]; });
+        return b.commit().catch(() => {});
+      }
+    })
+    .then(() => {
+      editDirty = false;
+      showToast('手順書を保存しました');
+      openRecipe(recipeRef.id);
+    })
+    .catch(() => showToast('保存に失敗しました'))
+    .finally(() => { btn.disabled = false; btn.textContent = '💾 保存する'; });
+}
+
+function cancelRecipeEdit() {
+  if (editDirty && !confirm('編集内容を保存せずに閉じますか？')) return;
+  editDirty = false;
+  if (editingRecipeId && state.recipes[editingRecipeId]) openRecipe(editingRecipeId);
+  else goHome();
+}
+
 /* ================= common ui ================= */
 function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
@@ -1548,8 +2053,12 @@ document.querySelectorAll('.modal-bg').forEach(bg => {
   bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('show'); });
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') document.querySelectorAll('.modal-bg.show').forEach(m => m.classList.remove('show'));
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-bg.show').forEach(m => m.classList.remove('show'));
+    closeLightbox();
+  }
 });
+document.getElementById('re-title').addEventListener('input', () => { editDirty = true; });
 document.getElementById('mf-name').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); submitForm(); }
 });
@@ -1585,7 +2094,7 @@ function esc(s) {
 /* ================= Firebase / sync ================= */
 let auth = null, db = null;
 let currentUser = null;
-let unsubItems = null, unsubLabels = null, unsubPresets = null, unsubRecent = null;
+let unsubItems = null, unsubLabels = null, unsubPresets = null, unsubRecent = null, unsubRecipes = null;
 let firstLoaded = false;
 
 const itemId = (sec, r, c) => `${sec}_${r}_${c}`;
@@ -1624,12 +2133,24 @@ function startSync() {
     renderRecent();
     if (document.getElementById('m-form').classList.contains('show')) renderFormChips();
   }, () => {});
+  // 手順書
+  unsubRecipes = db.collection('recipes').onSnapshot(snap => {
+    const m = {};
+    snap.forEach(doc => { m[doc.id] = doc.data(); });
+    state.recipes = m;
+    renderRecipeList();
+    if (currentRecipeId && viewVisible('view-recipe')) {
+      if (state.recipes[currentRecipeId]) renderRecipeDetail();
+      else { showToast('この手順書は削除されました'); goHome(); }
+    }
+  }, () => {});
 }
 function stopSync() {
   if (unsubItems) { unsubItems(); unsubItems = null; }
   if (unsubLabels) { unsubLabels(); unsubLabels = null; }
   if (unsubPresets) { unsubPresets(); unsubPresets = null; }
   if (unsubRecent) { unsubRecent(); unsubRecent = null; }
+  if (unsubRecipes) { unsubRecipes(); unsubRecipes = null; }
 }
 function rerender() {
   if (currentSec) renderSection(); else renderHome();
@@ -1689,12 +2210,15 @@ function initFirebase() {
       startSync();
     } else {
       stopSync();
-      state.items = {}; state.labels = {}; state.presets = []; recentNames = [];
+      state.items = {}; state.labels = {}; state.presets = []; state.recipes = {}; recentNames = [];
       firstLoaded = false;
       selectMode = false; selected.clear(); moveFrom = null; moveMulti = null;
+      currentRecipeId = null; editingRecipeId = null; editSteps = []; editDirty = false;
+      Object.keys(imgCache).forEach(k => delete imgCache[k]);
       undoStack.length = 0; redoStack.length = 0; updateUndoUI();
       document.getElementById('select-bar').style.display = 'none';
       document.getElementById('move-banner').style.display = 'none';
+      closeLightbox();
       goHome();
       ov.classList.add('show');
     }
