@@ -10,25 +10,38 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="theme-color" content="#14283f">
 <style>
+  /* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4
+   * Hallmark · audit-fix 2026-07-29 · scope: visual layer only
+   * removed: 135deg gradients ×35 · gradient text · aurora blobs · indigo accent ·
+   *          colored glow shadows · bounce easing · emoji-as-icons · transition:all
+   * kept: navy header · white A–O letters · amber=empty convention · color-coded actions */
   :root {
-    --bg: #e8eef6;
-    --panel: linear-gradient(180deg, #ffffff, #f6f9fc);
-    --glass: #ffffff;
+    --bg: #e9edf4;
+    --panel: #fcfdff;
+    --glass: #fcfdff;
+    --card: #fcfdff;
     --line: rgba(20,48,80,.30);
     --line2: rgba(20,48,80,.14);
     --ink: #10233c;
     --sub: #51687f;
     --acc: #059669;
+    --acc-deep: #047857;
     --acc-dim: rgba(5,150,105,.15);
+    --acc-tint: #d9f2e7;
     --amber: #92610a;
+    --amber-badge: #f6c445;
     --amber-dim: rgba(250,204,21,.32);
     --rose: #e11d48;
     --rose-dim: rgba(225,29,72,.13);
-    --orange: #ea580c;
+    --orange: #d95f10;
     --orange-dim: rgba(234,88,12,.15);
     --navy: #14283f;
-    --indigo: #4338ca;
-    --shadow: 0 6px 18px rgba(16,42,72,.18);
+    --navy-2: #1d3552;
+    --navy-soft: #33506f;
+    --blue: #0a6194;
+    --slate: #46586d;
+    --slate-tint: #eef2f7;
+    --shadow: 0 2px 10px rgba(16,42,72,.12);
   }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; }
@@ -39,14 +52,7 @@
     touch-action: manipulation;
     font-variant-numeric: tabular-nums;
   }
-  /* fixed aurora backdrop (iOS-safe alternative to background-attachment:fixed) */
-  body::before {
-    content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
-    background:
-      radial-gradient(1100px 700px at 85% -10%, rgba(37,99,235,.20), transparent 60%),
-      radial-gradient(950px 700px at -10% 108%, rgba(5,150,105,.18), transparent 55%),
-      var(--bg);
-  }
+  :focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
   button { font-family: inherit; touch-action: manipulation; }
   /* iPad: no text selection / long-press callout on tap targets */
   button, .hd-title, .ov-sec, .ov-ct-head, .sub-cell, .sr-row, .sec-list .row, .stat {
@@ -57,15 +63,14 @@
   ::-webkit-scrollbar-thumb { background:rgba(18,56,94,.20); border-radius:6px; }
   ::-webkit-scrollbar-track { background:transparent; }
   @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-  @keyframes pop { from { opacity:0; transform:translateY(18px) scale(.96); } to { opacity:1; transform:none; } }
+  @keyframes pop { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
   #view-home, #view-section { animation: fadeUp .28s ease both; }
 
   /* ---------- header ---------- */
   header {
     position: sticky; top:0; z-index:30;
-    background: linear-gradient(135deg, #1c3556, #12253c);
-    border-bottom: none;
-    box-shadow: 0 6px 22px rgba(10,25,45,.32);
+    background: var(--navy);
+    border-bottom: 1px solid #0c1a2b;
     padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
   }
   .hd-row { display:flex; align-items:center; gap:10px; padding:10px 0; }
@@ -74,25 +79,19 @@
     display:flex; align-items:center; gap:8px; color:#fff;
   }
   .hd-title .logo {
-    width:30px; height:30px; border-radius:9px;
-    background:linear-gradient(135deg, #34d399, #06b6d4);
-    color:#06281d; font-weight:900;
+    width:30px; height:30px; border-radius:8px;
+    background:var(--acc);
+    color:#fff; font-weight:900;
     display:flex; align-items:center; justify-content:center; font-size:15px;
-    box-shadow:0 0 16px rgba(52,211,153,.65);
   }
   .searchbox { flex:1; position:relative; min-width:120px; }
   .searchbox input {
-    width:100%; height:46px; border:2px solid transparent; border-radius:12px;
-    padding: 0 40px 0 38px; font-size:16px; background:#fff; color:var(--ink);
+    width:100%; height:46px; border:2px solid transparent; border-radius:10px;
+    padding: 0 40px 0 14px; font-size:16px; background:var(--card); color:var(--ink);
     outline:none; -webkit-appearance:none; appearance:none;
-    box-shadow:0 2px 10px rgba(0,0,0,.22);
   }
   .searchbox input::placeholder { color:#8ea3b8; }
-  .searchbox input:focus {
-    border-color:#34d399;
-    box-shadow:0 0 0 3px rgba(52,211,153,.45);
-  }
-  .searchbox .mag { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#7c92a8; font-size:16px; pointer-events:none; }
+  .searchbox input:focus { border-color:var(--acc); }
   .searchbox .clear {
     position:absolute; right:6px; top:50%; transform:translateY(-50%);
     width:32px; height:32px; border:none; border-radius:50%; background:#dbe3ec;
@@ -104,19 +103,18 @@
     cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;
   }
   .hd-btn:active { background:rgba(255,255,255,.30); }
-  #hd-history { background:linear-gradient(135deg,#6366f1,#4338ca); border-color:transparent; box-shadow:0 4px 14px rgba(67,56,202,.55); }
-  #hd-excel { background:linear-gradient(135deg,#10b981,#047857); border-color:transparent; box-shadow:0 4px 14px rgba(5,150,105,.55); }
-  #hd-logout { background:rgba(244,63,94,.26); border-color:rgba(255,150,170,.55); }
+  #hd-history { background:var(--navy-soft); border-color:#48688c; }
+  #hd-excel { background:var(--acc-deep); border-color:#0a9b70; }
+  #hd-logout { background:transparent; border-color:rgba(255,150,170,.55); color:#ffb3c1; }
 
   /* ---------- move banner ---------- */
   #move-banner {
     display:none; position:sticky; top:calc(66px + env(safe-area-inset-top)); z-index:29;
-    background:linear-gradient(90deg, rgba(197,110,31,.92), rgba(224,142,46,.92));
-    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    background:var(--orange);
+    border-bottom:1px solid #b34e0c;
     color:#fff; padding:10px 14px;
     font-size:14px; font-weight:600;
     align-items:center; justify-content:space-between; gap:10px;
-    box-shadow:0 6px 20px rgba(224,142,46,.25);
   }
   #move-banner button {
     border:1.5px solid rgba(255,255,255,.7); background:transparent; color:#fff;
@@ -137,11 +135,7 @@
     box-shadow:var(--shadow);
     padding:12px 18px; display:flex; align-items:baseline; gap:8px;
   }
-  .stat b {
-    font-size:26px; font-weight:900;
-    background:linear-gradient(135deg, #059669, #047857 45%, #0369a1);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-  }
+  .stat b { font-size:26px; font-weight:900; color:var(--acc-deep); }
   .stat span { font-size:13px; color:var(--sub); font-weight:600; }
   .hint { color:#3f566d; font-size:14px; margin:4px 2px 12px; font-weight:500; }
 
@@ -154,17 +148,14 @@
   }
   .ov-col { display:flex; flex-direction:column; gap:10px; }
   .ov-container {
-    border:1.5px solid rgba(20,48,80,.20); border-radius:14px; background:var(--panel);
-    overflow:hidden; box-shadow:0 6px 18px rgba(16,42,72,.16);
+    border:1.5px solid rgba(20,48,80,.22); border-radius:12px; background:var(--panel);
+    overflow:hidden; box-shadow:var(--shadow);
   }
   .ov-ct-head {
-    background:linear-gradient(135deg, #1c3556, #12253c); color:#fff; padding:9px 11px;
+    background:var(--navy); color:#fff; padding:9px 11px;
     display:flex; align-items:baseline; justify-content:space-between;
   }
-  .ov-ct-head .letter {
-    font-size:19px; font-weight:900; letter-spacing:.10em; color:#fff;
-    text-shadow:0 1px 3px rgba(0,0,0,.35);
-  }
+  .ov-ct-head .letter { font-size:19px; font-weight:900; letter-spacing:.10em; color:#fff; }
   .ov-ct-head .used { font-size:11.5px; color:#c6d7e8; font-weight:700; }
   .ov-sec {
     display:flex; align-items:center; gap:6px; padding:0 9px;
@@ -178,12 +169,11 @@
   }
   .ov-sec .ct {
     font-size:12.5px; font-weight:900; color:#fff; white-space:nowrap;
-    background:linear-gradient(135deg,#10b981,#047857); border-radius:999px; padding:3px 10px;
-    box-shadow:0 2px 6px rgba(5,150,105,.35);
+    background:var(--acc-deep); border-radius:999px; padding:3px 10px;
   }
-  .ov-sec.empty { background:linear-gradient(90deg, var(--amber-dim), rgba(250,204,21,.10) 75%); }
+  .ov-sec.empty { background:#fbf3d8; }
   .ov-sec.empty:active { background:rgba(250,204,21,.45); }
-  .ov-sec.empty .ct { color:#4a3b06; background:#fbbf24; box-shadow:0 2px 6px rgba(180,140,10,.35); font-weight:900; }
+  .ov-sec.empty .ct { color:#4a3b06; background:var(--amber-badge); font-weight:900; }
   .ov-sec.empty .lb { color:#7a5c08; }
   .ov-space {
     flex:1; min-height:160px; border:2px dashed var(--line); border-radius:14px;
@@ -195,9 +185,8 @@
   .sec-bar { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
   .sec-bar .back {
     height:44px; padding:0 16px; border:none; border-radius:12px;
-    background:linear-gradient(135deg,#33507a,#1e3454);
+    background:var(--navy-soft);
     font-size:14.5px; font-weight:800; color:#fff; cursor:pointer;
-    box-shadow:0 4px 12px rgba(16,42,72,.30);
   }
   .sec-bar .back:active { filter:brightness(1.15); }
   .sec-title {
@@ -207,16 +196,15 @@
   .sec-count { font-size:13.5px; color:var(--sub); font-weight:600; }
   .sec-label {
     border:none; border-radius:999px;
-    background:linear-gradient(135deg,#10b981,#047857);
+    background:var(--acc-deep);
     padding:7px 15px; font-size:13.5px; font-weight:800; color:#fff; cursor:pointer;
-    box-shadow:0 3px 10px rgba(5,150,105,.40);
   }
-  .sec-label.unset { color:#41586f; background:#fff; border:1.5px dashed var(--line); box-shadow:none; font-weight:700; }
+  .sec-label.unset { color:#41586f; background:var(--card); border:1.5px dashed var(--line); box-shadow:none; font-weight:700; }
   .sec-label:active { filter:brightness(1.1); }
   .sec-nav { margin-left:auto; display:flex; gap:8px; }
   .sec-nav button {
     width:48px; height:44px; border:1.5px solid var(--line); border-radius:12px;
-    background:#fff; font-size:16px; color:var(--navy); font-weight:800; cursor:pointer;
+    background:var(--card); font-size:16px; color:var(--navy); font-weight:800; cursor:pointer;
     box-shadow:0 2px 6px rgba(16,42,72,.12);
   }
   .sec-nav button:active { background:#e3ebf3; }
@@ -229,7 +217,7 @@
   .sub-head {
     display:flex; align-items:center; justify-content:center;
     font-size:12px; font-weight:800; color:#fff;
-    background:linear-gradient(135deg,#3c5a80,#294464); border-radius:7px; min-height:26px;
+    background:var(--navy-soft); border-radius:7px; min-height:26px;
   }
   .sub-cell {
     border:1.5px dashed rgba(20,48,80,.30); border-radius:10px; background:#eef3f8;
@@ -241,8 +229,7 @@
   .sub-cell .plus { color:#93a9c0; font-size:20px; font-weight:400; }
   .sub-cell.filled {
     border:2px solid #059669;
-    background:linear-gradient(160deg, #d1fae5, #a7f3d0);
-    box-shadow:0 3px 10px rgba(5,150,105,.30);
+    background:var(--acc-tint);
   }
   .sub-cell.filled .nm {
     font-size:12.5px; font-weight:800; color:#064e3b; text-align:center;
@@ -268,7 +255,7 @@
   }
   .sec-list .row:active { background:#f2f6f9; }
   .sec-list .pos {
-    background:linear-gradient(135deg,#3c5a80,#294464); color:#fff; border-radius:7px; padding:4px 9px;
+    background:var(--navy-soft); color:#fff; border-radius:7px; padding:4px 9px;
     font-size:12px; font-weight:800; white-space:nowrap;
   }
   .sec-list .nm { font-size:15px; font-weight:600; flex:1; color:var(--ink); }
@@ -278,8 +265,7 @@
   #search-panel {
     display:none; position:fixed; left:0; right:0; bottom:0; z-index:25;
     top:calc(66px + env(safe-area-inset-top));
-    background:rgba(243,246,249,.92);
-    -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
+    background:var(--bg);
     overflow-y:auto; padding:14px 12px 40px;
   }
   #search-panel .inner { max-width:800px; margin:0 auto; }
@@ -289,9 +275,8 @@
   .sr-row:first-child { border-top:none; }
   .sr-row:active { background:#f2f6f9; }
   .sr-row .loc {
-    background:linear-gradient(135deg, #10b981, #0369a1); color:#fff; border-radius:9px; padding:6px 12px;
+    background:var(--acc-deep); color:#fff; border-radius:9px; padding:6px 12px;
     font-size:13px; font-weight:900; white-space:nowrap; letter-spacing:.06em;
-    box-shadow:0 4px 12px rgba(5,150,105,.45);
   }
   .sr-row .pos { font-size:12px; color:var(--sub); white-space:nowrap; }
   .sr-row .nm { font-size:15.5px; font-weight:700; flex:1; color:var(--ink); }
@@ -302,35 +287,33 @@
   .modal-bg {
     display:none; position:fixed; inset:0; z-index:40;
     background:rgba(30,50,70,.38);
-    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
     align-items:flex-start; justify-content:center;
     padding: 8vh 16px 16px;
   }
   .modal-bg.show { display:flex; }
   .modal {
-    background:linear-gradient(180deg, #ffffff, #f7fafc);
+    background:var(--card);
     border:1px solid var(--line2);
     border-radius:20px; width:100%; max-width:560px;
     max-height:84vh; overflow-y:auto;
     box-shadow:0 24px 70px rgba(20,45,75,.28);
     padding:22px;
   }
-  .modal-bg.show .modal { animation:pop .24s cubic-bezier(.18,.9,.28,1.12) both; }
+  .modal-bg.show .modal { animation:pop .2s cubic-bezier(.2,.7,.3,1) both; }
   .modal h2 { font-size:18px; font-weight:800; letter-spacing:.03em; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
   .modal h2 .loc-chip {
-    background:linear-gradient(135deg, #10b981, #0891b2); color:#fff; border-radius:9px; padding:4px 11px;
+    background:var(--acc-deep); color:#fff; border-radius:9px; padding:4px 11px;
     font-size:13px; font-weight:900; letter-spacing:.06em;
-    box-shadow:0 4px 12px rgba(16,185,129,.30);
   }
   .fld { margin-bottom:14px; }
   .fld label { display:block; font-size:12.5px; color:var(--sub); font-weight:600; margin-bottom:5px; }
   .fld input[type=text] {
     width:100%; height:50px; border:1.5px solid var(--line); border-radius:12px;
-    padding:0 14px; font-size:16px; outline:none; background:#fff; color:var(--ink);
+    padding:0 14px; font-size:16px; outline:none; background:var(--card); color:var(--ink);
     -webkit-appearance:none; appearance:none;
   }
   .fld input[type=text]:focus {
-    border-color:var(--acc); background:#fff;
+    border-color:var(--acc); background:var(--card);
     box-shadow:0 0 0 3px rgba(16,185,129,.18);
   }
   .qty-row { display:flex; align-items:center; gap:10px; }
@@ -342,7 +325,7 @@
   .qty-row input {
     width:80px; height:48px; text-align:center; font-size:18px; font-weight:700;
     border:1.5px solid var(--line); border-radius:12px; outline:none;
-    background:#fff; color:var(--ink);
+    background:var(--card); color:var(--ink);
   }
   .btn-row { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
   .btn {
@@ -351,16 +334,14 @@
   }
   .btn:active { filter:brightness(.93); }
   .btn.primary {
-    background:linear-gradient(135deg, #10b981, #0d9488); color:#fff; font-weight:800;
-    box-shadow:0 6px 20px rgba(16,185,129,.30);
+    background:var(--acc-deep); color:#fff; font-weight:800;
   }
   .btn.ghost { background:#cfdbe8; color:#1a3554; border:1.5px solid rgba(20,48,80,.28); font-weight:800; }
   .btn.danger { background:var(--rose-dim); color:var(--rose); }
   .btn.danger-solid {
-    background:linear-gradient(135deg, #f43f5e, #e11d48); color:#fff;
-    box-shadow:0 6px 20px rgba(225,29,72,.25);
+    background:var(--rose); color:#fff;
   }
-  .btn.move { background:linear-gradient(135deg,#fb923c,#ea580c); color:#fff; box-shadow:0 6px 20px rgba(234,88,12,.35); }
+  .btn.move { background:var(--orange); color:#fff; }
 
   .detail-info { background:#e7f6ef; border:2px solid rgba(5,150,105,.35); border-radius:14px; padding:14px 16px; margin-bottom:6px; }
   .detail-info .dnm { font-size:20px; font-weight:900; margin-bottom:6px; color:#064e3b; }
@@ -375,7 +356,7 @@
   }
   .hist-tag.add { background:#059669; color:#fff; }
   .hist-tag.consume { background:#e11d48; color:#fff; }
-  .hist-tag.edit { background:#4338ca; color:#fff; }
+  .hist-tag.edit { background:var(--slate); color:#fff; }
   .hist-tag.move { background:#ea580c; color:#fff; }
   .hist-body { flex:1; font-size:14px; color:var(--ink); }
   .hist-body .sub2 { font-size:11.5px; color:var(--sub); margin-top:1px; }
@@ -385,12 +366,11 @@
   #toast {
     position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom));
     transform:translateX(-50%) translateY(20px);
-    background:rgba(18,37,60,.97); color:#fff;
-    border:1.5px solid rgba(52,211,153,.65); border-radius:14px;
-    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    background:var(--navy); color:#fff;
+    border:1px solid var(--acc); border-radius:12px;
     padding:13px 22px; font-size:14.5px; font-weight:600; z-index:60;
-    box-shadow:0 10px 34px rgba(20,45,75,.20), 0 0 18px rgba(16,185,129,.12);
-    opacity:0; pointer-events:none; transition:all .25s; max-width:88vw; text-align:center;
+    box-shadow:0 4px 16px rgba(10,20,35,.35);
+    opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; max-width:88vw; text-align:center;
   }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
@@ -403,7 +383,7 @@
   }
   .chip:active { filter:brightness(.94); }
   .chip.recent { color:#1e3a8a; border-color:#2563eb; background:#dbeafe; }
-  .chip.edit { color:#41586f; border:2px dashed rgba(20,48,80,.40); background:#fff; font-weight:700; }
+  .chip.edit { color:#41586f; border:2px dashed rgba(20,48,80,.40); background:var(--card); font-weight:700; }
 
   /* ---------- 最近の品名（ホーム） ---------- */
   .stats-row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
@@ -414,25 +394,23 @@
   /* ---------- 複数選択 / 一括移動 ---------- */
   #select-bar {
     display:none; position:sticky; top:calc(66px + env(safe-area-inset-top)); z-index:29;
-    background:linear-gradient(90deg, rgba(13,166,120,.96), rgba(10,150,178,.96));
+    background:var(--acc-deep);
     color:#fff; padding:10px 14px; align-items:center; justify-content:space-between; gap:10px;
-    font-size:14px; font-weight:700; box-shadow:0 6px 20px rgba(13,166,120,.25);
-    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    font-size:14px; font-weight:700; border-bottom:1px solid #03614a;
   }
   #select-bar { flex-wrap:wrap; }
   #select-bar .sb-btns { display:flex; gap:8px; flex-wrap:wrap; }
-  #select-bar button { border:1.5px solid rgba(255,255,255,.75); background:#fff; color:#0a8a63; border-radius:9px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  #select-bar button { border:1.5px solid rgba(255,255,255,.75); background:var(--card); color:#0a8a63; border-radius:9px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
   #select-bar button.ghost2 { background:transparent; color:#fff; }
   #select-bar button.danger2 { color:var(--rose); }
   .sub-cell { position:relative; }
-  .sub-cell.selected { border:2px solid #0a8a63; background:linear-gradient(160deg, rgba(16,185,129,.38), rgba(16,185,129,.14)); }
+  .sub-cell.selected { border:2px solid #0a8a63; background:#b9e9d4; }
   .sub-cell .checkbadge { position:absolute; top:3px; right:5px; font-size:12px; color:#0a8a63; font-weight:900; }
   .sec-nav .sel-toggle {
     width:auto; padding:0 14px; font-size:13.5px; font-weight:800; white-space:nowrap;
-    background:linear-gradient(135deg,#0ea5e9,#0369a1); color:#fff; border:none;
-    box-shadow:0 4px 12px rgba(3,105,161,.40);
+    background:var(--blue); color:#fff; border:none;
   }
-  .sec-nav .sel-toggle.active { background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; box-shadow:0 4px 12px rgba(217,119,6,.45); }
+  .sec-nav .sel-toggle.active { background:#d97706; color:#fff; }
 
   /* ---------- ヘッダーのアイコンボタン / 無効状態 ---------- */
   .hd-btn:disabled { opacity:.35; cursor:default; }
@@ -444,9 +422,9 @@
   .preset-row span { font-size:15px; font-weight:600; color:var(--ink); }
   .preset-row button { width:34px; height:34px; border:none; border-radius:9px; background:var(--rose-dim); color:var(--rose); font-size:16px; font-weight:800; cursor:pointer; }
   .preset-add { display:flex; gap:8px; align-items:stretch; }
-  .preset-add input { flex:1; height:48px; border:1.5px solid var(--line); border-radius:12px; padding:0 14px; font-size:16px; outline:none; background:#fff; color:var(--ink); }
+  .preset-add input { flex:1; height:48px; border:1.5px solid var(--line); border-radius:12px; padding:0 14px; font-size:16px; outline:none; background:var(--card); color:var(--ink); }
   .preset-add input:focus { border-color:var(--acc); box-shadow:0 0 0 3px rgba(16,185,129,.18); }
-  .preset-add button { flex:0 0 auto; min-width:84px; height:48px; border:none; border-radius:12px; background:linear-gradient(135deg,#10b981,#0d9488); color:#fff; font-size:15px; font-weight:800; cursor:pointer; }
+  .preset-add button { flex:0 0 auto; min-width:84px; height:48px; border:none; border-radius:12px; background:var(--acc-deep); color:#fff; font-size:15px; font-weight:800; cursor:pointer; }
 
   /* ---------- home mode tabs ---------- */
   .mode-tabs {
@@ -458,27 +436,24 @@
     color:#41586f; font-size:15px; font-weight:800; cursor:pointer;
   }
   .mode-tab.active {
-    background:linear-gradient(135deg,#1c3556,#12253c); color:#fff;
-    box-shadow:0 4px 12px rgba(16,42,72,.35);
+    background:var(--navy); color:#fff;
   }
 
   /* ---------- recipe list ---------- */
   .rc-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; flex-wrap:wrap; }
   .rc-new {
     height:50px; padding:0 20px; border:none; border-radius:12px;
-    background:linear-gradient(135deg,#10b981,#047857); color:#fff;
+    background:var(--acc-deep); color:#fff;
     font-size:15px; font-weight:800; cursor:pointer;
-    box-shadow:0 4px 14px rgba(5,150,105,.45);
   }
-  .rc-list { background:#fff; border:1px solid var(--line2); border-radius:18px; overflow:hidden; box-shadow:var(--shadow); }
+  .rc-list { background:var(--card); border:1px solid var(--line2); border-radius:18px; overflow:hidden; box-shadow:var(--shadow); }
   .rc-row { display:flex; align-items:center; gap:12px; padding:14px 16px; border-top:1px solid var(--line2); cursor:pointer; }
   .rc-row:first-child { border-top:none; }
   .rc-row:active { background:#e3ebf3; }
   .rc-icon {
     flex:0 0 42px; width:42px; height:42px; border-radius:11px;
-    background:linear-gradient(135deg,#6366f1,#4338ca);
+    background:var(--navy-soft);
     display:flex; align-items:center; justify-content:center; font-size:20px;
-    box-shadow:0 3px 10px rgba(67,56,202,.35);
   }
   .rc-t { flex:1; min-width:0; }
   .rc-title { font-size:16px; font-weight:800; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -489,19 +464,19 @@
   /* ---------- recipe detail ---------- */
   .rd-steps { display:flex; flex-direction:column; gap:12px; max-width:860px; }
   .step-card {
-    background:#fff; border:1.5px solid var(--line2); border-radius:16px;
+    background:var(--card); border:1.5px solid var(--line2); border-radius:16px;
     padding:14px 16px; box-shadow:var(--shadow); display:flex; gap:12px; align-items:flex-start;
   }
   .step-no {
     flex:0 0 34px; width:34px; height:34px; border-radius:10px;
-    background:linear-gradient(135deg,#1c3556,#12253c); color:#fff;
+    background:var(--navy); color:#fff;
     font-weight:900; display:flex; align-items:center; justify-content:center; font-size:16px;
   }
   .step-body { flex:1; min-width:0; }
   .step-text { font-size:15.5px; font-weight:700; color:var(--ink); line-height:1.55; white-space:pre-wrap; word-break:break-word; }
   .step-note {
-    margin-top:7px; font-size:13px; color:#3730a3; background:rgba(99,102,241,.10);
-    border-left:3px solid #6366f1; padding:6px 10px; border-radius:0 8px 8px 0; font-weight:600;
+    margin-top:7px; font-size:13px; color:var(--slate); background:var(--slate-tint);
+    border:1px solid var(--line2); padding:6px 10px; border-radius:8px; font-weight:600;
     white-space:pre-wrap; word-break:break-word;
   }
   .step-time {
@@ -521,18 +496,15 @@
   }
   .sec-nav .save-btn {
     width:auto; padding:0 16px; font-size:13.5px; font-weight:800; white-space:nowrap;
-    background:linear-gradient(135deg,#10b981,#047857); color:#fff; border:none;
-    box-shadow:0 4px 12px rgba(5,150,105,.40);
+    background:var(--acc-deep); color:#fff; border:none;
   }
   .sec-nav .danger-btn {
     width:auto; padding:0 14px; font-size:15px;
-    background:linear-gradient(135deg,#f43f5e,#e11d48); color:#fff; border:none;
-    box-shadow:0 4px 12px rgba(225,29,72,.40);
+    background:var(--rose); color:#fff; border:none;
   }
   .sec-nav .pdf-btn {
     width:auto; padding:0 15px; font-size:13.5px; font-weight:800; white-space:nowrap;
-    background:linear-gradient(135deg,#6366f1,#4338ca); color:#fff; border:none;
-    box-shadow:0 4px 12px rgba(67,56,202,.40);
+    background:var(--navy-soft); color:#fff; border:none;
   }
   .pdf-note { font-size:13.5px; color:#3f566d; line-height:1.8; font-weight:600; margin-bottom:16px; }
   .pdf-note b { color:var(--ink); }
@@ -540,26 +512,26 @@
   /* ---------- recipe editor ---------- */
   .re-wrap { display:flex; flex-direction:column; max-width:860px; }
   .re-card {
-    background:#fff; border:1.5px solid var(--line2); border-radius:16px;
+    background:var(--card); border:1.5px solid var(--line2); border-radius:16px;
     padding:16px; box-shadow:var(--shadow); margin-bottom:12px;
   }
   .re-step-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
   .re-step-no {
     width:30px; height:30px; border-radius:9px;
-    background:linear-gradient(135deg,#1c3556,#12253c); color:#fff;
+    background:var(--navy); color:#fff;
     font-weight:900; display:flex; align-items:center; justify-content:center; font-size:14px;
   }
   .re-step-label { font-weight:800; color:var(--navy); font-size:15px; }
   .re-step-tools { margin-left:auto; display:flex; gap:6px; }
   .re-mini {
     width:40px; height:40px; border:1.5px solid var(--line); border-radius:9px;
-    background:#fff; font-weight:800; font-size:15px; color:var(--navy); cursor:pointer;
+    background:var(--card); font-weight:800; font-size:15px; color:var(--navy); cursor:pointer;
   }
   .re-mini:disabled { opacity:.3; }
   .re-mini.del { color:var(--rose); border-color:rgba(225,29,72,.4); }
   .re-text {
     width:100%; min-height:76px; border:1.5px solid var(--line); border-radius:12px;
-    padding:11px 14px; font-size:16px; background:#fff; color:var(--ink);
+    padding:11px 14px; font-size:16px; background:var(--card); color:var(--ink);
     outline:none; font-family:inherit; resize:vertical; -webkit-appearance:none; appearance:none;
   }
   .re-text:focus { border-color:var(--acc); box-shadow:0 0 0 3px rgba(16,185,129,.18); }
@@ -569,7 +541,7 @@
   .re-img-prev { width:76px; height:76px; border-radius:10px; object-fit:cover; border:2px solid var(--line2); background:#eef3f8; }
   .re-img-btn {
     height:42px; padding:0 15px; border:1.5px dashed var(--line); border-radius:10px;
-    background:#fff; font-weight:700; font-size:13.5px; color:#41586f; cursor:pointer;
+    background:var(--card); font-weight:700; font-size:13.5px; color:#41586f; cursor:pointer;
   }
   .re-img-btn.del { color:var(--rose); border-color:rgba(225,29,72,.4); }
   .re-add-step {
@@ -598,20 +570,19 @@
     width:100%; max-width:380px; text-align:center;
     background:var(--glass); border:1px solid var(--line2); border-radius:22px;
     padding:30px 24px calc(26px + env(safe-area-inset-bottom));
-    box-shadow:var(--shadow); animation:pop .3s cubic-bezier(.18,.9,.28,1.12) both;
+    box-shadow:var(--shadow); animation:pop .25s cubic-bezier(.2,.7,.3,1) both;
   }
   .login-logo {
     width:60px; height:60px; margin:0 auto 16px; border-radius:16px;
-    background:linear-gradient(135deg, #10b981, #0ea5e9); color:#fff; font-weight:800; font-size:30px;
+    background:var(--acc); color:#fff; font-weight:800; font-size:30px;
     display:flex; align-items:center; justify-content:center;
-    box-shadow:0 8px 22px rgba(16,185,129,.35);
   }
   .login-card h1 { font-size:21px; font-weight:800; letter-spacing:.02em; }
   .login-sub { color:var(--sub); font-size:13.5px; margin:4px 0 20px; }
   .login-card .fld { text-align:left; }
   .login-card input {
     width:100%; height:50px; border:1.5px solid var(--line); border-radius:12px;
-    padding:0 14px; font-size:16px; outline:none; background:#fff; color:var(--ink);
+    padding:0 14px; font-size:16px; outline:none; background:var(--card); color:var(--ink);
     -webkit-appearance:none; appearance:none;
   }
   .login-card input:focus { border-color:var(--acc); box-shadow:0 0 0 3px rgba(16,185,129,.18); }
@@ -625,15 +596,14 @@
   <div class="hd-row">
     <div class="hd-title" onclick="goHome()"><span class="logo">収</span><span id="hd-label">区画収納</span></div>
     <div class="searchbox">
-      <span class="mag">🔍</span>
       <input id="search-input" type="text" placeholder="品名で検索" autocomplete="off">
       <button class="clear" id="search-clear" onclick="clearSearch()">✕</button>
     </div>
     <button class="hd-btn ic" id="hd-undo" onclick="undoLast()" title="元に戻す" disabled>↶</button>
     <button class="hd-btn ic" id="hd-redo" onclick="redoLast()" title="やり直す" disabled>↷</button>
-    <button class="hd-btn" id="hd-history" onclick="openHistory()">🕘 履歴</button>
-    <button class="hd-btn" id="hd-excel" onclick="exportExcel()">📊 Excel</button>
-    <button class="hd-btn" id="hd-logout" onclick="doLogout()" title="ログアウト">⏻</button>
+    <button class="hd-btn" id="hd-history" onclick="openHistory()">履歴</button>
+    <button class="hd-btn" id="hd-excel" onclick="exportExcel()">Excel</button>
+    <button class="hd-btn" id="hd-logout" onclick="doLogout()">ログアウト</button>
   </div>
 </header>
 
@@ -661,8 +631,8 @@
   <!-- home -->
   <div id="view-home">
     <div class="mode-tabs">
-      <button class="mode-tab active" id="tab-freezer" onclick="setHomeTab('freezer')">🧊 フリーザー管理</button>
-      <button class="mode-tab" id="tab-recipes" onclick="setHomeTab('recipes')">📋 手順書一覧</button>
+      <button class="mode-tab active" id="tab-freezer" onclick="setHomeTab('freezer')">フリーザー管理</button>
+      <button class="mode-tab" id="tab-recipes" onclick="setHomeTab('recipes')">手順書一覧</button>
     </div>
 
     <div id="home-freezer">
@@ -719,9 +689,9 @@
         <div class="sec-count" id="rd-meta"></div>
       </div>
       <div class="sec-nav">
-        <button class="pdf-btn" onclick="exportRecipePdf(currentRecipeId)">📄 PDF</button>
-        <button class="sel-toggle" onclick="openRecipeEdit(currentRecipeId)">✏️ 編集</button>
-        <button class="danger-btn" onclick="deleteRecipe()" title="この手順書を削除">🗑</button>
+        <button class="pdf-btn" onclick="exportRecipePdf(currentRecipeId)">PDF</button>
+        <button class="sel-toggle" onclick="openRecipeEdit(currentRecipeId)">編集</button>
+        <button class="danger-btn" onclick="deleteRecipe()">削除</button>
       </div>
     </div>
     <div class="rd-steps" id="rd-steps"></div>
@@ -733,7 +703,7 @@
       <button class="back" onclick="cancelRecipeEdit()">✕ キャンセル</button>
       <div><div class="sec-title" id="re-heading">新しい手順書</div></div>
       <div class="sec-nav">
-        <button class="save-btn" id="re-save-btn" onclick="saveRecipe()">💾 保存する</button>
+        <button class="save-btn" id="re-save-btn" onclick="saveRecipe()">保存する</button>
       </div>
     </div>
     <div class="re-wrap">
@@ -790,8 +760,8 @@
       <button class="btn danger-solid" onclick="consumeCell()">消費する（このマスを空ける）</button>
     </div>
     <div class="btn-row">
-      <button class="btn ghost" onclick="openEdit()">✏️ 編集</button>
-      <button class="btn move" onclick="startMove()">↔️ 移動</button>
+      <button class="btn ghost" onclick="openEdit()">編集</button>
+      <button class="btn move" onclick="startMove()">移動</button>
       <button class="btn ghost" onclick="closeModal('m-detail')">閉じる</button>
     </div>
   </div>
@@ -849,7 +819,7 @@
 <!-- history modal -->
 <div class="modal-bg" id="m-history">
   <div class="modal">
-    <h2>🕘 履歴（新しい順）</h2>
+    <h2>履歴（新しい順）</h2>
     <div class="hist-list" id="hist-list"></div>
     <div class="btn-row">
       <button class="btn ghost" onclick="closeModal('m-history')">閉じる</button>
@@ -860,14 +830,14 @@
 <!-- PDF backup prompt (after saving a recipe) -->
 <div class="modal-bg" id="m-pdfprompt">
   <div class="modal">
-    <h2>✅ クラウドに保存しました</h2>
+    <h2>クラウドに保存しました</h2>
     <p class="pdf-note">
       手順書「<b id="pdfp-title"></b>」を保存しました。<br>
       バックアップとして、<b>PDFに出力してこの端末にも保存</b>しておくことをおすすめします。
       書き出したPDFは iPad の「ファイル」アプリに残り、通信やクラウドに問題があったときも確実に手順書を確認できます。
     </p>
     <div class="btn-row">
-      <button class="btn primary" onclick="confirmPdfExport()">📄 PDFに出力して保存する</button>
+      <button class="btn primary" onclick="confirmPdfExport()">PDFに出力して保存する</button>
     </div>
     <div class="btn-row">
       <button class="btn ghost" onclick="closeModal('m-pdfprompt')">今回はしない</button>
@@ -1080,10 +1050,10 @@ function renderSection() {
   document.getElementById('sec-title').textContent = `区画 ${sec}`;
   const lblBtn = document.getElementById('sec-label');
   if (state.labels[sec]) {
-    lblBtn.textContent = `🏷 ${state.labels[sec]}`;
+    lblBtn.textContent = state.labels[sec];
     lblBtn.classList.remove('unset');
   } else {
-    lblBtn.textContent = '🏷 名前を付ける';
+    lblBtn.textContent = '名前を付ける';
     lblBtn.classList.add('unset');
   }
   const items = secItems(sec);
@@ -1793,7 +1763,7 @@ function renderRecipeList() {
     const who = r.updatedBy ? '　・　' + esc(String(r.updatedBy).split('@')[0]) : '';
     return `
     <div class="rc-row" onclick="openRecipe('${r.id}')">
-      <div class="rc-icon">📋</div>
+      <div class="rc-icon">${esc((r.title || "手").trim().charAt(0) || "手")}</div>
       <div class="rc-t">
         <div class="rc-title">${esc(r.title || '(無題)')}</div>
         <div class="rc-meta">${n} 手順　・　更新 ${fmtDate(r.updatedAt || r.createdAt || Date.now())}${who}</div>
@@ -1827,12 +1797,12 @@ function renderRecipeDetail() {
       <div class="step-no">${i + 1}</div>
       <div class="step-body">
         <div class="step-text">${esc(s.text || '')}</div>
-        ${s.note ? `<div class="step-note">📝 ${esc(s.note)}</div>` : ''}
-        ${s.minutes ? `<span class="step-time">⏱ ${esc(s.minutes)}</span>` : ''}
+        ${s.note ? `<div class="step-note">注釈: ${esc(s.note)}</div>` : ''}
+        ${s.minutes ? `<span class="step-time">所要 ${esc(s.minutes)}</span>` : ''}
       </div>
       ${s.imageId ? `<img class="step-thumb" id="rd-thumb-${i}" alt="手順${i + 1}の画像" onclick="openLightbox('${s.imageId}')">` : ''}
     </div>`;
-    if (s.pause) html += `<div class="pause-band"><span class="pause-chip">⏸ ここで中断OK：${esc(s.pause)}</span></div>`;
+    if (s.pause) html += `<div class="pause-band"><span class="pause-chip">ここで中断OK：${esc(s.pause)}</span></div>`;
   });
   document.getElementById('rd-steps').innerHTML = html || '<div class="rc-empty">手順がありません</div>';
   steps.forEach((s, i) => {
@@ -1900,13 +1870,13 @@ function buildPdfNode(r, imgs) {
       <div style="flex:0 0 30px;width:30px;height:30px;border-radius:8px;background:#14283f;color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;">${i + 1}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:15px;font-weight:700;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${esc(s.text || '')}</div>
-        ${s.note ? `<div style="margin-top:6px;font-size:12.5px;color:#3730a3;border-left:3px solid #6366f1;padding:4px 10px;background:#eef0fd;white-space:pre-wrap;word-break:break-word;">注釈: ${esc(s.note)}</div>` : ''}
-        ${s.minutes ? `<div style="margin-top:6px;font-size:12.5px;font-weight:700;color:#065f46;">⏱ 所要時間: ${esc(s.minutes)}</div>` : ''}
+        ${s.note ? `<div style="margin-top:6px;font-size:12.5px;color:#46586d;border:1px solid #d5dde6;padding:4px 10px;background:#f0f4f8;border-radius:6px;white-space:pre-wrap;word-break:break-word;">注釈: ${esc(s.note)}</div>` : ''}
+        ${s.minutes ? `<div style="margin-top:6px;font-size:12.5px;font-weight:700;color:#065f46;">所要時間: ${esc(s.minutes)}</div>` : ''}
       </div>
       ${img ? `<img src="${img}" style="flex:0 0 auto;max-width:140px;max-height:140px;border:1px solid #ccc;border-radius:8px;">` : ''}
     </div>`;
     if (s.pause) html += `
-    <div class="pdf-pause" style="margin:10px 0 10px 44px;padding:8px 12px;border:1.5px dashed #d97706;background:#fef3c7;color:#92400e;border-radius:8px;font-size:12.5px;font-weight:700;page-break-inside:avoid;white-space:pre-wrap;word-break:break-word;">⏸ ここで中断OK：${esc(s.pause)}</div>`;
+    <div class="pdf-pause" style="margin:10px 0 10px 44px;padding:8px 12px;border:1.5px dashed #d97706;background:#fef3c7;color:#92400e;border-radius:8px;font-size:12.5px;font-weight:700;page-break-inside:avoid;white-space:pre-wrap;word-break:break-word;">ここで中断OK：${esc(s.pause)}</div>`;
   });
   html += `<div style="margin-top:14px;font-size:10.5px;color:#999;">区画収納管理アプリから出力</div>`;
   wrap.innerHTML = html;
@@ -2001,7 +1971,7 @@ function renderEditSteps() {
         <button type="button" class="re-img-btn" onclick="pickStepImage(${i})">変更</button>
         <button type="button" class="re-img-btn del" onclick="removeStepImage(${i})">削除</button>`;
     } else {
-      imgHtml = `<button type="button" class="re-img-btn" onclick="pickStepImage(${i})">📷 画像を追加</button>`;
+      imgHtml = `<button type="button" class="re-img-btn" onclick="pickStepImage(${i})">画像を追加</button>`;
     }
     return `
     <div class="re-card">
@@ -2151,7 +2121,7 @@ function saveRecipe() {
       openModal('m-pdfprompt');
     })
     .catch(() => showToast('保存に失敗しました'))
-    .finally(() => { btn.disabled = false; btn.textContent = '💾 保存する'; });
+    .finally(() => { btn.disabled = false; btn.textContent = '保存する'; });
 }
 
 function cancelRecipeEdit() {
