@@ -389,6 +389,11 @@
   .stats-row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
   .recent-strip { display:flex; align-items:center; gap:8px; flex:1; min-width:220px; }
   .recent-label { font-size:12px; color:#3f566d; font-weight:800; white-space:nowrap; }
+  .recent-reset {
+    height:30px; padding:0 10px; border:1px solid var(--line); border-radius:8px;
+    background:var(--card); color:var(--sub); font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .recent-reset:active { background:#e3ebf3; }
   .recent-chips { display:flex; flex-wrap:wrap; gap:7px; }
 
   /* ---------- 複数選択 / 一括移動 ---------- */
@@ -645,6 +650,7 @@
       <div class="recent-strip" id="recent-strip" style="display:none">
         <span class="recent-label">最近の品名</span>
         <div class="recent-chips" id="recent-chips"></div>
+        <button class="recent-reset" onclick="resetRecent()">リセット</button>
       </div>
     </div>
     <div class="hint" id="home-hint">実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。</div>
@@ -933,7 +939,9 @@ let formTarget = null;     // {sec,r,c} for add, or key string for edit
 let highlightPos = null;   // {r,c} to pulse after opening section
 let selectMode = false;    // 複数選択モード
 let selected = new Set();  // 選択中の item キー（現在の区画）
-let recentNames = [];      // 最近登録された品名（最大5）
+let recentNames = [];      // 最近登録された品名（最大5・表示用）
+let recentRaw = [];        // 履歴から抽出した生データ [{name, ts}]
+let recentResetTs = 0;     // これ以前の履歴は「最近の品名」に表示しない（meta/recentResetで全端末共有）
 let bulkRenameKeys = null; // 一括名前変更の対象キー
 let homeTab = localStorage.getItem('shuno-tab') || 'freezer'; // ホームのタブ
 let pdfPromptId = null;       // 保存直後のPDF出力案内の対象手順書
@@ -1629,6 +1637,25 @@ function applyBulkRename() {
 }
 
 /* ================= 最近の品名（ホーム） ================= */
+function recomputeRecent() {
+  const seen = new Set(), names = [];
+  recentRaw.forEach(e => {
+    if (e.ts > recentResetTs && !seen.has(e.name)) { seen.add(e.name); names.push(e.name); }
+  });
+  recentNames = names.slice(0, 5);
+  renderRecent();
+  if (document.getElementById('m-form').classList.contains('show')) renderFormChips();
+  if (document.getElementById('m-bulkname').classList.contains('show')) renderChips('br-chips', 'br-name');
+}
+
+function resetRecent() {
+  if (!db || !currentUser) return;
+  if (!confirm('「最近の品名」の表示をリセットしますか？（全端末に反映されます。操作履歴は消えません）')) return;
+  db.collection('meta').doc('recentReset').set({ ts: Date.now(), by: currentUser.email })
+    .then(() => showToast('最近の品名をリセットしました'))
+    .catch(() => showToast('リセットに失敗しました'));
+}
+
 function renderRecent() {
   const strip = document.getElementById('recent-strip');
   const box = document.getElementById('recent-chips');
@@ -2179,7 +2206,7 @@ function esc(s) {
 /* ================= Firebase / sync ================= */
 let auth = null, db = null;
 let currentUser = null;
-let unsubItems = null, unsubLabels = null, unsubPresets = null, unsubRecent = null, unsubRecipes = null;
+let unsubItems = null, unsubLabels = null, unsubPresets = null, unsubRecent = null, unsubRecipes = null, unsubRecentReset = null;
 let firstLoaded = false;
 
 const itemId = (sec, r, c) => `${sec}_${r}_${c}`;
@@ -2212,11 +2239,15 @@ function startSync() {
   }, () => {});
   // 最近登録した品名（履歴の直近30件から add を抽出。複合インデックス不要）
   unsubRecent = db.collection('history').orderBy('ts', 'desc').limit(30).onSnapshot(snap => {
-    const seen = new Set(), names = [];
-    snap.forEach(d => { const h = d.data(); if (h.type === 'add' && h.name && !seen.has(h.name)) { seen.add(h.name); names.push(h.name); } });
-    recentNames = names.slice(0, 5);
-    renderRecent();
-    if (document.getElementById('m-form').classList.contains('show')) renderFormChips();
+    const raw = [];
+    snap.forEach(d => { const h = d.data(); if (h.type === 'add' && h.name) raw.push({ name: h.name, ts: h.ts || 0 }); });
+    recentRaw = raw;
+    recomputeRecent();
+  }, () => {});
+  // 「最近の品名」のリセット時刻（全端末共有）
+  unsubRecentReset = db.collection('meta').doc('recentReset').onSnapshot(doc => {
+    recentResetTs = (doc.exists && doc.data().ts) ? doc.data().ts : 0;
+    recomputeRecent();
   }, () => {});
   // 手順書
   unsubRecipes = db.collection('recipes').onSnapshot(snap => {
@@ -2236,6 +2267,7 @@ function stopSync() {
   if (unsubPresets) { unsubPresets(); unsubPresets = null; }
   if (unsubRecent) { unsubRecent(); unsubRecent = null; }
   if (unsubRecipes) { unsubRecipes(); unsubRecipes = null; }
+  if (unsubRecentReset) { unsubRecentReset(); unsubRecentReset = null; }
 }
 function rerender() {
   if (currentSec) renderSection(); else renderHome();
@@ -2295,7 +2327,7 @@ function initFirebase() {
       startSync();
     } else {
       stopSync();
-      state.items = {}; state.labels = {}; state.presets = []; state.recipes = {}; recentNames = [];
+      state.items = {}; state.labels = {}; state.presets = []; state.recipes = {}; recentNames = []; recentRaw = []; recentResetTs = 0;
       firstLoaded = false;
       selectMode = false; selected.clear(); moveFrom = null; moveMulti = null;
       currentRecipeId = null; editingRecipeId = null; editSteps = []; editDirty = false;
