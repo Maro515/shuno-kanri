@@ -422,6 +422,19 @@
   .hd-btn.ic { padding:0 12px; font-size:18px; }
 
   /* ---------- 品名プリセット管理 ---------- */
+  .pick-open {
+    height:44px; padding:0 14px; border:1px solid var(--line); border-radius:10px;
+    background:var(--card); color:var(--navy); font-weight:700; font-size:13.5px;
+    cursor:pointer; white-space:nowrap;
+  }
+  .pick-open:active { background:#e3ebf3; }
+  .pick-list { max-height:48vh; overflow-y:auto; margin-top:4px; }
+  .pick-row {
+    display:block; width:100%; text-align:left; padding:13px 6px;
+    border:none; border-bottom:1px solid var(--line2); background:transparent;
+    font-size:15.5px; font-weight:700; color:var(--ink); cursor:pointer;
+  }
+  .pick-row:active { background:#eef2f7; }
   .preset-list { max-height:44vh; overflow-y:auto; margin-top:4px; }
   .preset-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 4px; border-bottom:1px solid var(--line2); }
   .preset-row span { font-size:15px; font-weight:600; color:var(--ink); }
@@ -800,6 +813,18 @@
     <div class="btn-row">
       <button class="btn ghost" onclick="closeModal('m-bulkname')">キャンセル</button>
       <button class="btn primary" onclick="applyBulkRename()">変更する</button>
+    </div>
+  </div>
+</div>
+
+<!-- pick registered name modal -->
+<div class="modal-bg" id="m-pickname">
+  <div class="modal">
+    <h2>登録品名から選択</h2>
+    <div class="pick-list" id="pick-list"></div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="openPresetsFromPick()">品名の登録・編集</button>
+      <button class="btn ghost" onclick="closeModal('m-pickname')">閉じる</button>
     </div>
   </div>
 </div>
@@ -1670,16 +1695,42 @@ function searchName(btn) {
 }
 
 /* ================= 品名プリセット ================= */
+/* 品名欄の下: 最近の品名をレコメンドチップで表示し、登録品名は選択モーダルから選ぶ */
 function renderChips(boxId, targetId) {
   const box = document.getElementById(boxId);
   if (!box) return;
   const seen = new Set();
   const chips = [];
-  state.presets.forEach(n => { if (n && !seen.has(n)) { seen.add(n); chips.push({ n, recent: false }); } });
-  recentNames.forEach(n => { if (n && !seen.has(n)) { seen.add(n); chips.push({ n, recent: true }); } });
-  let html = chips.map(ch => `<button type="button" class="chip${ch.recent ? ' recent' : ''}" onclick="pickName(this,'${targetId}')">${esc(ch.n)}</button>`).join('');
-  if (targetId === 'mf-name') html += `<button type="button" class="chip edit" onclick="openPresets()">＋ 品名を登録</button>`;
+  recentNames.forEach(n => { if (n && !seen.has(n)) { seen.add(n); chips.push(n); } });
+  let html = chips.map(n => `<button type="button" class="chip recent" onclick="pickName(this,'${targetId}')">${esc(n)}</button>`).join('');
+  html += `<button type="button" class="pick-open" onclick="openPickName('${targetId}')">登録品名から選択する</button>`;
   box.innerHTML = html;
+}
+
+let pickTargetId = null;
+function openPickName(targetId) {
+  pickTargetId = targetId;
+  renderPickList();
+  openModal('m-pickname');
+}
+function renderPickList() {
+  const box = document.getElementById('pick-list');
+  if (!box) return;
+  if (!state.presets.length) {
+    box.innerHTML = '<div class="rc-empty">まだ品名が登録されていません。<br>「品名の登録・編集」から登録できます。</div>';
+    return;
+  }
+  box.innerHTML = state.presets.map((n, i) =>
+    `<button type="button" class="pick-row" onclick="pickPreset(${i})">${esc(n)}</button>`).join('');
+}
+function pickPreset(i) {
+  const name = state.presets[i];
+  if (name && pickTargetId) document.getElementById(pickTargetId).value = name;
+  closeModal('m-pickname');
+}
+function openPresetsFromPick() {
+  closeModal('m-pickname');
+  openPresets();
 }
 function renderFormChips() { renderChips('mf-chips', 'mf-name'); }
 function pickName(btn, targetId) {
@@ -2236,6 +2287,7 @@ function startSync() {
     if (document.getElementById('m-presets').classList.contains('show')) renderPresetList();
     if (document.getElementById('m-form').classList.contains('show')) renderFormChips();
     if (document.getElementById('m-bulkname').classList.contains('show')) renderChips('br-chips', 'br-name');
+    if (document.getElementById('m-pickname').classList.contains('show')) renderPickList();
   }, () => {});
   // 最近登録した品名（履歴の直近30件から add を抽出。複合インデックス不要）
   unsubRecent = db.collection('history').orderBy('ts', 'desc').limit(30).onSnapshot(snap => {
