@@ -1,6 +1,6 @@
 {
-  "name": "区画収納管理",
-  "short_name": "区画収納",
+  "name": "ラボ管理",
+  "short_name": "ラボ管理",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#e8eef6",

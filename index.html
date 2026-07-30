@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>区画収納管理</title>
+<meta name="apple-mobile-web-app-title" content="ラボ管理">
+<title>ラボ管理</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="theme-color" content="#14283f">
@@ -616,7 +617,7 @@
 
 <header>
   <div class="hd-row">
-    <div class="hd-title" onclick="goHome()"><span class="logo">収</span><span id="hd-label">区画収納</span></div>
+    <div class="hd-title" onclick="goHome()"><span class="logo">ラ</span><span id="hd-label">ラボ管理</span></div>
     <div class="searchbox">
       <input id="search-input" type="text" placeholder="品名で検索" autocomplete="off">
       <button class="clear" id="search-clear" onclick="clearSearch()">✕</button>
@@ -890,8 +891,8 @@
 <!-- login overlay -->
 <div id="login-overlay" class="show">
   <div class="login-card">
-    <div class="login-logo">収</div>
-    <h1>区画収納管理</h1>
+    <div class="login-logo">ラ</div>
+    <h1>ラボ管理</h1>
     <p class="login-sub">ログインしてください</p>
     <div class="fld"><label>メールアドレス</label>
       <input type="email" id="login-email" autocomplete="username" inputmode="email"></div>
@@ -1007,7 +1008,7 @@ function goHome() {
   currentSec = null;
   currentRecipeId = null;
   showView('view-home');
-  document.getElementById('hd-label').textContent = '区画収納';
+  document.getElementById('hd-label').textContent = 'ラボ管理';
   applyHomeTab();
   window.scrollTo(0, 0);
 }
@@ -2041,7 +2042,7 @@ function buildPdfNode(r, imgs) {
     if (s.pause) html += `
     <div class="pdf-pause" style="margin:10px 0 10px 44px;padding:8px 12px;border:1.5px dashed #d97706;background:#fef3c7;color:#92400e;border-radius:8px;font-size:12.5px;font-weight:700;page-break-inside:avoid;white-space:pre-wrap;word-break:break-word;">ここで中断OK：${esc(s.pause)}</div>`;
   });
-  html += `<div style="margin-top:14px;font-size:10.5px;color:#999;">区画収納管理アプリから出力</div>`;
+  html += `<div style="margin-top:14px;font-size:10.5px;color:#999;">ラボ管理アプリから出力</div>`;
   wrap.innerHTML = html;
   outer.appendChild(wrap);
   return outer;

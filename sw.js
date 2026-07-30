@@ -1,5 +1,5 @@
 /* 区画収納管理 — offline cache (network-first, cache fallback) */
-const CACHE = 'shuno-kanri-v16';
+const CACHE = 'shuno-kanri-v17';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
