@@ -139,6 +139,9 @@
   .stat span { font-size:13px; color:var(--sub); font-weight:600; }
   .hint { color:#3f566d; font-size:14px; margin:4px 2px 12px; font-weight:500; }
 
+  .map-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:4px 2px 12px; }
+  .pick-open.active { background:#d97706; color:#fff; border-color:transparent; }
+  .ov-sec.swap-picked { outline:2px solid var(--blue); outline-offset:-2px; background:#dcebf7; }
   .ov-wrap { overflow-x:auto; background:var(--glass); border:1px solid var(--line2); border-radius:18px; padding:14px; box-shadow:var(--shadow); }
   .ov-cols {
     display:grid;
@@ -357,6 +360,7 @@
   .hist-tag.add { background:#059669; color:#fff; }
   .hist-tag.consume { background:#e11d48; color:#fff; }
   .hist-tag.edit { background:var(--slate); color:#fff; }
+  .hist-tag.swap { background:var(--navy-soft); color:#fff; }
   .hist-tag.move { background:#ea580c; color:#fff; }
   .hist-body { flex:1; font-size:14px; color:var(--ink); }
   .hist-body .sub2 { font-size:11.5px; color:var(--sub); margin-top:1px; }
@@ -666,7 +670,10 @@
         <button class="recent-reset" onclick="resetRecent()">リセット</button>
       </div>
     </div>
-    <div class="hint" id="home-hint">実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。</div>
+    <div class="map-toolbar">
+      <div class="hint" id="home-hint" style="margin:0">実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。</div>
+      <button class="pick-open" id="swap-btn" onclick="toggleSwapMode()">BOXを入れ替える</button>
+    </div>
     <div class="ov-wrap"><div class="ov-cols" id="ov-grid"></div></div>
     </div><!-- /home-freezer -->
 
@@ -970,6 +977,8 @@ let recentResetTs = 0;     // これ以前の履歴は「最近の品名」に�
 let bulkRenameKeys = null; // 一括名前変更の対象キー
 let homeTab = localStorage.getItem('shuno-tab') || 'freezer'; // ホームのタブ
 let pdfPromptId = null;       // 保存直後のPDF出力案内の対象手順書
+let swapMode = false;         // BOX入れ替えモード
+let swapFirst = null;         // 入れ替え1つ目のBOX（区画ID）
 let currentRecipeId = null;   // 開いている手順書
 let editingRecipeId = null;   // 編集中の手順書（null=新規）
 let editSteps = [];           // 編集中の手順配列
@@ -1034,10 +1043,11 @@ function renderHome() {
         const n = secItems(sec).length;
         if (n > 0) used++;
         const lbl = `<span class="lb">${state.labels[sec] ? esc(state.labels[sec]) : ''}</span>`;
+        const picked = (swapMode && swapFirst === sec) ? ' swap-picked' : '';
         if (n === 0) {
-          rows += `<div class="ov-sec empty" onclick="openSection('${sec}')"><span class="n">${r}</span>${lbl}<span class="ct">空</span></div>`;
+          rows += `<div class="ov-sec empty${picked}" onclick="openSection('${sec}')"><span class="n">${r}</span>${lbl}<span class="ct">空</span></div>`;
         } else {
-          rows += `<div class="ov-sec" onclick="openSection('${sec}')"><span class="n">${r}</span>${lbl}<span class="ct">${n}品</span></div>`;
+          rows += `<div class="ov-sec${picked}" onclick="openSection('${sec}')"><span class="n">${r}</span>${lbl}<span class="ct">${n}品</span></div>`;
         }
       }
       html += `<div class="ov-container"><div class="ov-ct-head"><span class="letter">${L}</span><span class="used">${used}/9</span></div>${rows}</div>`;
@@ -1059,6 +1069,7 @@ function renderHome() {
 }
 
 function openSection(sec, hl) {
+  if (swapMode) { handleSwapPick(sec); return; }
   if (selectMode) exitSelectMode(true);
   currentSec = sec;
   currentRecipeId = null;
@@ -1312,7 +1323,11 @@ function startMove() {
 function cancelMove() {
   moveFrom = null;
   moveMulti = null;
+  swapMode = false;
+  swapFirst = null;
+  updateSwapBtn();
   document.getElementById('move-banner').style.display = 'none';
+  if (!currentSec && viewVisible('view-home')) renderHome();
 }
 
 function doMove(sec, r, c) {
@@ -1403,7 +1418,7 @@ function jumpTo(k) {
 }
 
 /* ================= history ================= */
-const HIST_LABEL = { add: '収納', consume: '消費', edit: '編集', move: '移動' };
+const HIST_LABEL = { add: '収納', consume: '消費', edit: '編集', move: '移動', swap: 'BOX入替' };
 
 function openHistory() {
   const box = document.getElementById('hist-list');
@@ -1416,12 +1431,15 @@ function openHistory() {
     snap.forEach(doc => {
       const h = doc.data();
       const who = h.by ? esc(String(h.by).split('@')[0]) : '';
+      const loc = h.type === 'swap'
+        ? (h.detail ? esc(h.detail) : '')
+        : `${h.sec} ${posLabel(h.r, h.c)}${h.detail ? '　' + esc(h.detail) : ''}`;
       html += `
       <div class="hist-row">
         <span class="hist-tag ${h.type}">${HIST_LABEL[h.type] || h.type}</span>
         <div class="hist-body">
           ${esc(h.name)}${h.qty > 1 ? ` ×${h.qty}` : ''}
-          <div class="sub2">${h.sec} ${posLabel(h.r, h.c)}${h.detail ? '　' + esc(h.detail) : ''}${who ? '　/ ' + who : ''}</div>
+          <div class="sub2">${loc}${who ? '　/ ' + who : ''}</div>
         </div>
         <span class="hist-time">${fmtDateTime(h.ts)}</span>
       </div>`;
@@ -1594,6 +1612,71 @@ function doMoveMulti(destSec, sr, sc) {
   pushUndo({ type: 'move', moves });
   cancelMove();
   showToast(`${movingItems.length}件を ${destSec} に移動しました`);
+}
+
+/* ================= BOX入れ替え（区画単位の入れ替え） ================= */
+function toggleSwapMode() {
+  if (swapMode) { cancelMove(); return; }
+  if (moveFrom || moveMulti) cancelMove();
+  if (selectMode) exitSelectMode(true);
+  swapMode = true; swapFirst = null;
+  document.getElementById('move-msg').textContent = 'BOX入れ替え：1つ目のBOX（段）をタップしてください';
+  document.getElementById('move-banner').style.display = 'flex';
+  updateSwapBtn();
+  renderHome();
+}
+function updateSwapBtn() {
+  const btn = document.getElementById('swap-btn');
+  if (!btn) return;
+  btn.textContent = swapMode ? '入れ替えを中止' : 'BOXを入れ替える';
+  btn.classList.toggle('active', swapMode);
+}
+function handleSwapPick(sec) {
+  if (!swapFirst) {
+    swapFirst = sec;
+    document.getElementById('move-msg').textContent =
+      `BOX入れ替え：${sec} を選択中。入れ替え先のBOXをタップしてください`;
+    renderHome();
+    return;
+  }
+  if (sec === swapFirst) { showToast('同じBOXです。別のBOXをタップしてください'); return; }
+  const nA = secItems(swapFirst).length, nB = secItems(sec).length;
+  const la = state.labels[swapFirst] ? `（${state.labels[swapFirst]}）` : '';
+  const lb = state.labels[sec] ? `（${state.labels[sec]}）` : '';
+  if (!confirm(`${swapFirst}${la} ${nA}品 と ${sec}${lb} ${nB}品 の中身を入れ替えます。BOXの名前も一緒に入れ替わります。よろしいですか？`)) return;
+  doSwap(swapFirst, sec);
+}
+/* 2つの区画の全マス+名前を入れ替えるバッチを組む（現在のstateが基準・自己逆演算） */
+function buildSwapBatch(batch, secA, secB) {
+  const a = secItems(secA), b = secItems(secB);
+  const posA = new Map(a.map(it => [`${it.r}:${it.c}`, it]));
+  const posB = new Map(b.map(it => [`${it.r}:${it.c}`, it]));
+  const allPos = new Set([...posA.keys(), ...posB.keys()]);
+  allPos.forEach(p => {
+    const parts = p.split(':');
+    const r = +parts[0], c = +parts[1];
+    const ia = posA.get(p), ib = posB.get(p);
+    if (ib) batch.set(itemRef(secA, r, c), withPos(ib, { sec: secA, r, c }));
+    else if (ia) batch.delete(itemRef(secA, r, c));
+    if (ia) batch.set(itemRef(secB, r, c), withPos(ia, { sec: secB, r, c }));
+    else if (ib) batch.delete(itemRef(secB, r, c));
+  });
+  const la = state.labels[secA] || null, lb = state.labels[secB] || null;
+  if (lb) batch.set(db.collection('labels').doc(secA), { name: lb });
+  else if (la) batch.delete(db.collection('labels').doc(secA));
+  if (la) batch.set(db.collection('labels').doc(secB), { name: la });
+  else if (lb) batch.delete(db.collection('labels').doc(secB));
+}
+function doSwap(secA, secB) {
+  if (!db) return;
+  const batch = db.batch();
+  buildSwapBatch(batch, secA, secB);
+  batch.commit()
+    .then(() => addHistory({ type: 'swap', sec: secA, r: 1, c: 1, name: 'BOX入れ替え', qty: 1, detail: `${secA} ⇄ ${secB}` }))
+    .catch(() => showToast('入れ替えに失敗しました'));
+  pushUndo({ type: 'swap', secA, secB });
+  cancelMove();
+  showToast(`${secA} と ${secB} の中身を入れ替えました`);
 }
 
 /* ================= 一括削除 / 一括名前変更 ================= */
@@ -1805,6 +1888,8 @@ function execOp(op, dir) { // dir: 'redo' | 'undo'
     const ref = db.collection('labels').doc(op.sec);
     const val = dir === 'redo' ? op.after : op.before;
     if (val) batch.set(ref, { name: val }); else batch.delete(ref);
+  } else if (op.type === 'swap') {
+    buildSwapBatch(batch, op.secA, op.secB); // 現在のstateから組むため自己逆演算（undo/redoとも再入れ替え）
   } else {
     return Promise.resolve();
   }
@@ -2382,6 +2467,7 @@ function initFirebase() {
       state.items = {}; state.labels = {}; state.presets = []; state.recipes = {}; recentNames = []; recentRaw = []; recentResetTs = 0;
       firstLoaded = false;
       selectMode = false; selected.clear(); moveFrom = null; moveMulti = null;
+      swapMode = false; swapFirst = null; updateSwapBtn();
       currentRecipeId = null; editingRecipeId = null; editSteps = []; editDirty = false;
       Object.keys(imgCache).forEach(k => delete imgCache[k]);
       undoStack.length = 0; redoStack.length = 0; updateUndoUI();
