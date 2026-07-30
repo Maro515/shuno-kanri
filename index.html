@@ -611,6 +611,10 @@
   .login-card input:focus { border-color:var(--acc); box-shadow:0 0 0 3px rgba(16,185,129,.18); }
   .login-error { color:var(--rose); font-size:13px; font-weight:600; min-height:18px; margin:2px 2px 12px; text-align:left; }
   .login-card .btn { width:100%; }
+  .login-refresh {
+    margin-top:16px; border:none; background:none; color:var(--sub);
+    font-size:13px; font-weight:600; text-decoration:underline; cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -624,6 +628,7 @@
     </div>
     <button class="hd-btn ic" id="hd-undo" onclick="undoLast()" title="元に戻す" disabled>↶</button>
     <button class="hd-btn ic" id="hd-redo" onclick="redoLast()" title="やり直す" disabled>↷</button>
+    <button class="hd-btn" id="hd-refresh" onclick="refreshApp()" title="アプリを最新版に更新">更新</button>
     <button class="hd-btn" id="hd-history" onclick="openHistory()">履歴</button>
     <button class="hd-btn" id="hd-excel" onclick="exportExcel()">Excel</button>
     <button class="hd-btn" id="hd-logout" onclick="doLogout()">ログアウト</button>
@@ -900,6 +905,7 @@
       <input type="password" id="login-pass" autocomplete="current-password"></div>
     <div id="login-error" class="login-error"></div>
     <button class="btn primary" id="login-btn" onclick="doLogin()">ログイン</button>
+    <button type="button" class="login-refresh" onclick="refreshApp()">アプリを最新版に更新</button>
   </div>
 </div>
 
@@ -2293,6 +2299,22 @@ function cancelRecipeEdit() {
   editDirty = false;
   if (editingRecipeId && state.recipes[editingRecipeId]) openRecipe(editingRecipeId);
   else goHome();
+}
+
+/* ================= アプリ更新 ================= */
+function refreshApp() {
+  if (editDirty && !confirm('編集中の手順書は保存されていません。更新すると失われますが、よろしいですか？')) return;
+  showToast('最新版に更新しています…');
+  const done = () => location.reload();
+  if ('serviceWorker' in navigator && 'caches' in window) {
+    caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k))))
+      .then(() => navigator.serviceWorker.getRegistrations())
+      .then(rs => Promise.all(rs.map(r => r.update().catch(() => {}))))
+      .then(done)
+      .catch(done);
+  } else {
+    done();
+  }
 }
 
 /* ================= common ui ================= */
