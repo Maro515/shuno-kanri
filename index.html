@@ -469,6 +469,8 @@
     flex:1; height:50px; border:none; border-radius:10px; background:transparent;
     color:#41586f; font-size:15px; font-weight:800; cursor:pointer;
   }
+  .fz-tabs { max-width:340px; margin-bottom:12px; }
+  .fz-tabs .mode-tab { height:42px; font-size:14.5px; }
   .mode-tab.active {
     background:var(--navy); color:#fff;
   }
@@ -675,10 +677,14 @@
     </div>
 
     <div id="home-freezer">
+    <div class="mode-tabs fz-tabs">
+      <button class="mode-tab active" id="fz-f80" onclick="setFreezer('f80')">-80℃</button>
+      <button class="mode-tab" id="fz-f150" onclick="setFreezer('f150')">-150℃</button>
+    </div>
     <div class="stats-row">
       <div class="stats">
         <div class="stat"><b id="st-items">0</b><span>品を収納中</span></div>
-        <div class="stat"><b id="st-secs">0</b><span>/ 135 区画を使用</span></div>
+        <div class="stat"><b id="st-secs">0</b><span id="st-secs-total">/ 135 BOXを使用</span></div>
         <div class="stat"><b id="st-rate">0%</b><span>使用率</span></div>
       </div>
       <div class="recent-strip" id="recent-strip" style="display:none">
@@ -813,9 +819,9 @@
 <!-- section label modal -->
 <div class="modal-bg" id="m-label">
   <div class="modal">
-    <h2><span class="loc-chip" id="ml-loc"></span>区画の名前</h2>
+    <h2><span class="loc-chip" id="ml-loc"></span>BOXの名前</h2>
     <div class="fld">
-      <label>名前（空欄で保存すると名前を消せます）</label>
+      <label>BOXの名前（空欄で保存すると名前を消せます）</label>
       <input type="text" id="ml-name" autocomplete="off">
     </div>
     <div class="btn-row">
@@ -955,8 +961,27 @@ const firebaseConfig = {
 'use strict';
 
 /* ================= data ================= */
-const COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'];
-const ROWS = [1,2,3,4,5,6,7,8,9];
+/* フリーザー定義。-80℃の区画IDは従来どおり "A-1"、-150℃は接頭辞付き "150.A-1" で共存させる */
+const FREEZERS = {
+  f80:  { label: '-80℃',  pfx: '',
+          cols: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'], tiers: 9,
+          layout: [['A','B','C'], ['D','E','F'], ['G','H','I'], ['J','K','L'], ['M','N','O'], []] },
+  f150: { label: '-150℃', pfx: '150.',
+          cols: ['A','B','C','D','E','F','G','H','I','J','K','L'], tiers: 10,
+          layout: [['A','B','C'], ['D','E','F'], ['G','H','I'], ['J','K','L']] }
+};
+const FZ_IDS = ['f80', 'f150'];
+let curFz = FREEZERS[localStorage.getItem('shuno-fz')] ? localStorage.getItem('shuno-fz') : 'f80';
+
+const fzOf = sec => (String(sec).startsWith('150.') ? 'f150' : 'f80');
+const secShort = sec => (String(sec).startsWith('150.') ? String(sec).slice(4) : String(sec));  // 表示用 "A-1"
+const secFull = sec => `${FREEZERS[fzOf(sec)].label} ${secShort(sec)}`;
+const mkSec = (fz, L, tier) => `${FREEZERS[fz].pfx}${L}-${tier}`;
+const secOrder = sec => {
+  const F = FREEZERS[fzOf(sec)];
+  const [L, n] = secShort(sec).split('-');
+  return F.cols.indexOf(L) * F.tiers + (+n - 1);
+};
 let defaultSub = 9;   // 既定のマス数（meta/config.sub・個別設定のないBOXに適用）
 // BOXごとのマス数は labels/{区画} の sub フィールド（= state.subs[区画]）。未設定なら既定に従う
 const subOf = sec => state.subs[sec] || defaultSub;
@@ -1063,20 +1088,33 @@ function applyHomeTab() {
   if (fz) renderHome(); else renderRecipeList();
 }
 
-/* physical layout: containers stacked in columns of 3, rightmost slot is spare space */
-const LAYOUT = [ ['A','B','C'], ['D','E','F'], ['G','H','I'], ['J','K','L'], ['M','N','O'], [] ];
+function setFreezer(fz) {
+  if (!FREEZERS[fz] || fz === curFz) return;
+  if (swapMode) cancelMove();
+  curFz = fz;
+  localStorage.setItem('shuno-fz', fz);
+  renderHome();
+}
+function updateFzTabs() {
+  FZ_IDS.forEach(id => {
+    const b = document.getElementById('fz-' + id);
+    if (b) b.classList.toggle('active', id === curFz);
+  });
+}
 
 function renderHome() {
+  updateFzTabs();
+  const F = FREEZERS[curFz];
   const grid = document.getElementById('ov-grid');
   let html = '';
-  for (const col of LAYOUT) {
+  for (const col of F.layout) {
     html += '<div class="ov-col">';
     if (col.length === 0) html += '<div class="ov-space">空き<br>スペース</div>';
     for (const L of col) {
       let used = 0;
       let rows = '';
-      for (const r of ROWS) {
-        const sec = `${L}-${r}`;
+      for (let r = 1; r <= F.tiers; r++) {
+        const sec = mkSec(curFz, L, r);
         const n = secItems(sec).length;
         if (n > 0) used++;
         const lbl = `<span class="lb">${state.labels[sec] ? esc(state.labels[sec]) : ''}</span>`;
@@ -1087,48 +1125,52 @@ function renderHome() {
           rows += `<div class="ov-sec${picked}" onclick="openSection('${sec}')"><span class="n">${r}</span>${lbl}<span class="ct">${n}品</span></div>`;
         }
       }
-      html += `<div class="ov-container"><div class="ov-ct-head"><span class="letter">${L}</span><span class="used">${used}/9</span></div>${rows}</div>`;
+      html += `<div class="ov-container"><div class="ov-ct-head"><span class="letter">${L}</span><span class="used">${used}/${F.tiers}</span></div>${rows}</div>`;
     }
     html += '</div>';
   }
   grid.innerHTML = html;
 
-  const totalItems = Object.keys(state.items).length;
-  const usedSecs = new Set(Object.keys(state.items).map(k => k.split(':')[0])).size;
+  const myKeys = Object.keys(state.items).filter(k => fzOf(parseKey(k).sec) === curFz);
+  const totalItems = myKeys.length;
+  const usedSecs = new Set(myKeys.map(k => parseKey(k).sec)).size;
+  const totalSecs = F.cols.length * F.tiers;
   document.getElementById('st-items').textContent = totalItems;
   document.getElementById('st-secs').textContent = usedSecs;
-  document.getElementById('st-rate').textContent = `${Math.round(usedSecs / 135 * 100)}%`;
+  document.getElementById('st-secs-total').textContent = `/ ${totalSecs} BOXを使用`;
+  document.getElementById('st-rate').textContent = `${Math.round(usedSecs / totalSecs * 100)}%`;
   const hintEl = document.getElementById('home-hint');
   if (!firstLoaded) hintEl.textContent = 'クラウドと同期しています…';
-  else if (totalItems === 0) hintEl.textContent = 'まだ何も収納されていません。段をタップして収納を始めましょう（各コンテナは上から1〜9段）。';
-  else hintEl.textContent = '実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中のマスが開きます。黄色は空の段です。';
+  else if (totalItems === 0) hintEl.textContent = `${F.label}フリーザーはまだ空です。段をタップして収納を始めましょう（各コンテナは上から1〜${F.tiers}段）。`;
+  else hintEl.textContent = `${F.label}フリーザー：実際の配置と同じ並びです（各コンテナは上から1〜${F.tiers}段）。段をタップすると中のマスが開きます。黄色は空の段です。`;
   renderRecent();
 }
 
 function openSection(sec, hl) {
   if (swapMode) { handleSwapPick(sec); return; }
   if (selectMode) exitSelectMode(true);
+  if (fzOf(sec) !== curFz) { curFz = fzOf(sec); localStorage.setItem('shuno-fz', curFz); }
   currentSec = sec;
   currentRecipeId = null;
   highlightPos = hl || null;
   showView('view-section');
-  document.getElementById('hd-label').textContent = sec;
+  document.getElementById('hd-label').textContent = secShort(sec);
   renderSection();
   window.scrollTo(0, 0);
 }
 
-/* physical order: A-1 → A-2 → … → A-9 → B-1 → … (top-to-bottom within a container) */
+/* 物理順: A-1 → A-2 → … → A-最終段 → B-1 → …（同じフリーザー内を巡回） */
 function stepSection(dir) {
   if (!currentSec) return;
-  const [c, r] = currentSec.split('-');
-  let idx = COLS.indexOf(c) * 9 + (+r - 1);
-  idx = (idx + dir + 135) % 135;
-  openSection(`${COLS[Math.floor(idx / 9)]}-${(idx % 9) + 1}`);
+  const fz = fzOf(currentSec), F = FREEZERS[fz];
+  const total = F.cols.length * F.tiers;
+  const idx = (secOrder(currentSec) + dir + total) % total;
+  openSection(mkSec(fz, F.cols[Math.floor(idx / F.tiers)], (idx % F.tiers) + 1));
 }
 
 function renderSection() {
   const sec = currentSec;
-  document.getElementById('sec-title').textContent = `区画 ${sec}`;
+  document.getElementById('sec-title').textContent = `BOX ${secShort(sec)}`;
   const lblBtn = document.getElementById('sec-label');
   if (state.labels[sec]) {
     lblBtn.textContent = state.labels[sec];
@@ -1139,7 +1181,7 @@ function renderSection() {
   }
   const items = secItems(sec);
   const nSub = subOf(sec);
-  document.getElementById('sec-count').textContent = `${items.length} / ${nSub * nSub} マス使用中`;
+  document.getElementById('sec-count').textContent = `${FREEZERS[fzOf(sec)].label}　・　${items.length} / ${nSub * nSub} マス使用中`;
   const subBtn = document.getElementById('sec-sub-btn');
   if (subBtn) subBtn.textContent = `マス数 ${nSub}×${nSub}`;
 
@@ -1175,9 +1217,9 @@ function renderSection() {
   if (selectMode) {
     list.innerHTML = '<h3>品物のマスをタップして選択し、上のバーから「移動」「名前変更」「削除」をまとめて行えます。</h3><div style="height:10px"></div>';
   } else if (items.length === 0) {
-    list.innerHTML = '<h3>この区画は空です。マスをタップして収納できます。</h3><div style="height:10px"></div>';
+    list.innerHTML = '<h3>このBOXは空です。マスをタップして収納できます。</h3><div style="height:10px"></div>';
   } else {
-    list.innerHTML = '<h3>この区画の収納一覧</h3>' + items.map(it => `
+    list.innerHTML = '<h3>このBOXの収納一覧</h3>' + items.map(it => `
       <div class="row" onclick="openDetail('${it.key}')">
         <span class="pos">${posLabel(it.r, it.c)}</span>
         <span class="nm">${esc(it.name)}${it.qty > 1 ? ` ×${it.qty}` : ''}</span>
@@ -1212,7 +1254,7 @@ function tapCell(r, c) {
 /* ================= add / edit ================= */
 function openAddForm(sec, r, c) {
   formTarget = { mode: 'add', sec, r, c };
-  document.getElementById('mf-loc').textContent = `${sec} ${posLabel(r, c)}`;
+  document.getElementById('mf-loc').textContent = `${secShort(sec)} ${posLabel(r, c)}`;
   document.getElementById('mf-head').textContent = 'に収納する';
   document.getElementById('mf-save').textContent = '収納する';
   document.getElementById('mf-name').value = '';
@@ -1232,7 +1274,7 @@ function openEdit() {
   const p = parseKey(detailKey);
   formTarget = { mode: 'edit', key: detailKey };
   closeModal('m-detail');
-  document.getElementById('mf-loc').textContent = `${p.sec} ${posLabel(p.r, p.c)}`;
+  document.getElementById('mf-loc').textContent = `${secShort(p.sec)} ${posLabel(p.r, p.c)}`;
   document.getElementById('mf-head').textContent = 'の内容を編集';
   document.getElementById('mf-save').textContent = '保存する';
   document.getElementById('mf-name').value = it.name;
@@ -1287,9 +1329,9 @@ function submitForm() {
     if (targets.length < qty) {
       showToast(`空きマスが足りず、「${name}」を ${targets.length} マスに収納しました`);
     } else if (targets.length >= 2) {
-      showToast(`「${name}」を ${sec} の ${targets.length} マスに収納しました`);
+      showToast(`「${name}」を ${secShort(sec)} の ${targets.length} マスに収納しました`);
     } else {
-      showToast(`「${name}」を ${sec} ${posLabel(fr, fc)} に収納しました`);
+      showToast(`「${name}」を ${secShort(sec)} ${posLabel(fr, fc)} に収納しました`);
     }
   } else {
     const p = parseKey(formTarget.key);
@@ -1322,7 +1364,7 @@ function openDetail(k) {
   if (!it) return;
   detailKey = k;
   const p = parseKey(k);
-  document.getElementById('md-loc').textContent = `${p.sec} ${posLabel(p.r, p.c)}`;
+  document.getElementById('md-loc').textContent = `${secShort(p.sec)} ${posLabel(p.r, p.c)}`;
   document.getElementById('md-name').textContent = it.name;
   const q = it.qty || 1;
   const qtyRow = document.getElementById('md-qty-row');
@@ -1387,16 +1429,16 @@ function doMove(sec, r, c) {
   applyMoves(batch, moves, false);
   batch.commit()
     .then(() => addHistory({ type: 'move', sec, r, c, name: it.name, qty: it.qty || 1,
-             detail: `${from.sec} ${posLabel(from.r, from.c)} から` }))
+             detail: `${secShort(from.sec)} ${posLabel(from.r, from.c)} から` }))
     .catch(() => showToast('移動に失敗しました'));
   pushUndo({ type: 'move', moves });
   cancelMove();
-  showToast(`「${it.name}」を ${sec} ${posLabel(r, c)} に移動しました`);
+  showToast(`「${it.name}」を ${secShort(sec)} ${posLabel(r, c)} に移動しました`);
 }
 
 /* ================= section label ================= */
 function openLabelEdit() {
-  document.getElementById('ml-loc').textContent = currentSec;
+  document.getElementById('ml-loc').textContent = secFull(currentSec);
   document.getElementById('ml-name').value = state.labels[currentSec] || '';
   openModal('m-label');
   setTimeout(() => document.getElementById('ml-name').focus(), 100);
@@ -1411,7 +1453,7 @@ function saveLabel() {
   else ref.set({ name: FV().delete() }, { merge: true }).catch(() => {});  // マス数設定は残す
   pushUndo({ type: 'label', sec, before, after: v || null });
   closeModal('m-label');
-  showToast(v ? `区画 ${sec} に「${v}」と名前を付けました` : `区画 ${sec} の名前を消しました`);
+  showToast(v ? `${secShort(sec)} に「${v}」と名前を付けました` : `${secShort(sec)} の名前を消しました`);
 }
 
 /* ================= search ================= */
@@ -1431,7 +1473,8 @@ function renderSearch() {
       hits.push(Object.assign({ key: k }, parseKey(k), it));
     }
   }
-  hits.sort((a, b) => a.sec.localeCompare(b.sec) || a.r - b.r || a.c - b.c);
+  hits.sort((a, b) => FZ_IDS.indexOf(fzOf(a.sec)) - FZ_IDS.indexOf(fzOf(b.sec))
+    || secOrder(a.sec) - secOrder(b.sec) || a.r - b.r || a.c - b.c);
 
   document.getElementById('sr-count').textContent =
     `「${searchInput.value.trim()}」の検索結果: ${hits.length}件`;
@@ -1441,7 +1484,7 @@ function renderSearch() {
   } else {
     box.innerHTML = '<div class="sr-list">' + hits.map(h => `
       <div class="sr-row" onclick="jumpTo('${h.key}')">
-        <span class="loc">${h.sec}</span>
+        <span class="loc">${secFull(h.sec)}</span>
         <span class="pos">${posLabel(h.r, h.c)}</span>
         <span class="nm">${esc(h.name)}${h.qty > 1 ? ` ×${h.qty}` : ''}</span>
         <span class="meta">${fmtDate(h.addedAt)}収納<br>${esc(h.note || '')}</span>
@@ -1478,7 +1521,7 @@ function openHistory() {
       const who = h.by ? esc(String(h.by).split('@')[0]) : '';
       const loc = h.type === 'swap'
         ? (h.detail ? esc(h.detail) : '')
-        : `${h.sec} ${posLabel(h.r, h.c)}${h.detail ? '　' + esc(h.detail) : ''}`;
+        : `${secFull(h.sec)} ${posLabel(h.r, h.c)}${h.detail ? '　' + esc(h.detail) : ''}`;
       html += `
       <div class="hist-row">
         <span class="hist-tag ${h.type}">${HIST_LABEL[h.type] || h.type}</span>
@@ -1526,35 +1569,35 @@ function buildExcelWorkbook() {
     const p = parseKey(k);
     items.push(Object.assign({}, p, state.items[k]));
   }
-  const secIndex = s => { const [L, n] = s.split('-'); return COLS.indexOf(L) * 9 + (+n - 1); };
-  items.sort((a, b) => secIndex(a.sec) - secIndex(b.sec) || a.r - b.r || a.c - b.c);
+  items.sort((a, b) => FZ_IDS.indexOf(fzOf(a.sec)) - FZ_IDS.indexOf(fzOf(b.sec))
+    || secOrder(a.sec) - secOrder(b.sec) || a.r - b.r || a.c - b.c);
 
   const wb = XLSX.utils.book_new();
 
   // ① 一覧シート
-  const overview = [['区画', '名前', '段', '列', '品名', '数量', '収納日', '収納者']];
+  const overview = [['フリーザー', 'BOX', '名前', '段', '列', '品名', '数量', '収納日', '収納者']];
   items.forEach(it => {
     overview.push([
-      it.sec, state.labels[it.sec] || '', it.r, it.c, it.name,
+      FREEZERS[fzOf(it.sec)].label, secShort(it.sec), state.labels[it.sec] || '', it.r, it.c, it.name,
       it.qty || 1,
       it.addedAt ? fmtDate(it.addedAt) : '',
       it.addedBy ? String(it.addedBy).split('@')[0] : ''
     ]);
   });
   const wsOv = XLSX.utils.aoa_to_sheet(overview);
-  wsOv['!cols'] = [{ wch: 6 }, { wch: 12 }, { wch: 5 }, { wch: 5 }, { wch: 20 }, { wch: 6 }, { wch: 12 }, { wch: 14 }];
+  wsOv['!cols'] = [{ wch: 8 }, { wch: 6 }, { wch: 12 }, { wch: 5 }, { wch: 5 }, { wch: 20 }, { wch: 6 }, { wch: 12 }, { wch: 14 }];
   XLSX.utils.book_append_sheet(wb, wsOv, '一覧');
 
-  // ② 区画ごとのシート（品物のある区画のみ、物理順 A-1→A-9→B-1…）
-  for (const L of COLS) for (const n of ROWS) {
-    const sec = `${L}-${n}`;
+  // ② BOXごとのシート（品物のあるBOXのみ、フリーザー順→物理順）
+  for (const fz of FZ_IDS) for (const L of FREEZERS[fz].cols) for (let n = 1; n <= FREEZERS[fz].tiers; n++) {
+    const sec = mkSec(fz, L, n);
     const cells = items.filter(it => it.sec === sec);
     if (cells.length === 0) continue;
     const map = {};
     cells.forEach(it => { map[`${it.r}:${it.c}`] = it; });
     const label = state.labels[sec];
     const grid = [];
-    grid.push([`区画 ${sec}${label ? '（' + label + '）' : ''}`]);
+    grid.push([`${FREEZERS[fz].label}　BOX ${secShort(sec)}${label ? '（' + label + '）' : ''}`]);
     const g = subOf(sec);
     grid.push(['段＼列'].concat(Array.from({ length: g }, (_, i) => i + 1)));
     for (let r = 1; r <= g; r++) {
@@ -1567,7 +1610,7 @@ function buildExcelWorkbook() {
     }
     const ws = XLSX.utils.aoa_to_sheet(grid);
     ws['!cols'] = [{ wch: 7 }].concat(Array(g).fill({ wch: 12 }));
-    XLSX.utils.book_append_sheet(wb, ws, sec);
+    XLSX.utils.book_append_sheet(wb, ws, `${FREEZERS[fz].label} ${secShort(sec)}`);
   }
   return wb;
 }
@@ -1654,11 +1697,11 @@ function doMoveMulti(destSec, sr, sc) {
   batch.commit()
     .then(() => addHistory({ type: 'move', sec: destSec, r: dests[0][0], c: dests[0][1],
              name: `${movingItems.length}件`, qty: movingItems.length,
-             detail: `${movingItems[0].sec} などから一括移動` }))
+             detail: `${secShort(movingItems[0].sec)} などから一括移動` }))
     .catch(() => showToast('移動に失敗しました'));
   pushUndo({ type: 'move', moves });
   cancelMove();
-  showToast(`${movingItems.length}件を ${destSec} に移動しました`);
+  showToast(`${movingItems.length}件を ${secShort(destSec)} に移動しました`);
 }
 
 /* ================= BOXごとのマス数（9×9 / 10×10） ================= */
@@ -1666,7 +1709,7 @@ function openBoxSize() {
   const sec = currentSec;
   if (!sec) return;
   const cur = subOf(sec);
-  document.getElementById('bs-loc').textContent = sec;
+  document.getElementById('bs-loc').textContent = secFull(sec);
   document.getElementById('bs-9').classList.toggle('current', cur === 9);
   document.getElementById('bs-10').classList.toggle('current', cur === 10);
   openModal('m-boxsize');
@@ -1681,13 +1724,13 @@ function applyBoxSize(n) {
     if (out.length) {
       const list = out.slice(0, 12).map(o => `・${o.r}段 ${o.c}列 ${o.name}`).join('\n')
         + (out.length > 12 ? `\n…ほか ${out.length - 12} 件` : '');
-      alert(`${sec} を ${n}×${n} にできません。\n\n${n}段・${n}列より外に ${out.length} 品が入っています。`
+      alert(`${secFull(sec)} を ${n}×${n} にできません。\n\n${n}段・${n}列より外に ${out.length} 品が入っています。`
         + `先に移動または消費してください。\n\n${list}`);
       return;
     }
   }
   db.collection('labels').doc(sec).set({ sub: n }, { merge: true })
-    .then(() => showToast(`${sec} のマス数を ${n}×${n} にしました`))
+    .then(() => showToast(`${secShort(sec)} のマス数を ${n}×${n} にしました`))
     .catch(() => showToast('変更に失敗しました'));
   closeModal('m-boxsize');
 }
@@ -1698,7 +1741,7 @@ function toggleSwapMode() {
   if (moveFrom || moveMulti) cancelMove();
   if (selectMode) exitSelectMode(true);
   swapMode = true; swapFirst = null;
-  document.getElementById('move-msg').textContent = 'BOX入れ替え：1つ目のBOX（段）をタップしてください';
+  document.getElementById('move-msg').textContent = 'BOX入れ替え：1つ目のBOXをタップしてください（同じフリーザー内）';
   document.getElementById('move-banner').style.display = 'flex';
   updateSwapBtn();
   renderHome();
@@ -1713,7 +1756,7 @@ function handleSwapPick(sec) {
   if (!swapFirst) {
     swapFirst = sec;
     document.getElementById('move-msg').textContent =
-      `BOX入れ替え：${sec} を選択中。入れ替え先のBOXをタップしてください`;
+      `BOX入れ替え：${secShort(sec)} を選択中。入れ替え先のBOXをタップしてください`;
     renderHome();
     return;
   }
@@ -1721,7 +1764,8 @@ function handleSwapPick(sec) {
   const nA = secItems(swapFirst).length, nB = secItems(sec).length;
   const la = state.labels[swapFirst] ? `（${state.labels[swapFirst]}）` : '';
   const lb = state.labels[sec] ? `（${state.labels[sec]}）` : '';
-  if (!confirm(`${swapFirst}${la} ${nA}品 と ${sec}${lb} ${nB}品 の中身を入れ替えます。BOXの名前も一緒に入れ替わります。よろしいですか？`)) return;
+  if (!confirm(`${secShort(swapFirst)}${la} ${nA}品 と ${secShort(sec)}${lb} ${nB}品 の中身を入れ替えます。`
+    + `BOXの名前とマス数も一緒に入れ替わります。よろしいですか？`)) return;
   doSwap(swapFirst, sec);
 }
 /* 2つの区画の全マス+名前を入れ替えるバッチを組む（現在のstateが基準・自己逆演算） */
@@ -1752,11 +1796,11 @@ function doSwap(secA, secB) {
   const batch = db.batch();
   buildSwapBatch(batch, secA, secB);
   batch.commit()
-    .then(() => addHistory({ type: 'swap', sec: secA, r: 1, c: 1, name: 'BOX入れ替え', qty: 1, detail: `${secA} ⇄ ${secB}` }))
+    .then(() => addHistory({ type: 'swap', sec: secA, r: 1, c: 1, name: 'BOX入れ替え', qty: 1, detail: `${secShort(secA)} ⇄ ${secShort(secB)}` }))
     .catch(() => showToast('入れ替えに失敗しました'));
   pushUndo({ type: 'swap', secA, secB });
   cancelMove();
-  showToast(`${secA} と ${secB} の中身を入れ替えました`);
+  showToast(`${secShort(secA)} と ${secShort(secB)} の中身を入れ替えました`);
 }
 
 /* ================= 一括削除 / 一括名前変更 ================= */
