@@ -160,12 +160,7 @@
   .gs-opt.current b { color:#064e3b; }
   .ov-sec.swap-picked { outline:2px solid var(--blue); outline-offset:-2px; background:#dcebf7; }
   .ov-wrap { overflow-x:auto; background:var(--glass); border:1px solid var(--line2); border-radius:18px; padding:14px; box-shadow:var(--shadow); }
-  .ov-cols {
-    display:grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap:10px;
-    min-width: 720px;
-  }
+  .ov-cols { display:grid; gap:10px; }   /* 列数はJSでフリーザーに合わせて指定 */
   .ov-col { display:flex; flex-direction:column; gap:10px; }
   .ov-container {
     border:1.5px solid rgba(20,48,80,.22); border-radius:12px; background:var(--panel);
@@ -204,11 +199,6 @@
   .fz-cold .ov-sec.empty .lb { color:var(--cold); }
   .fz-cold .ov-sec .n { color:#5b7f9c; }
   .mode-tab.active.cold { background:var(--cold); }
-  .ov-space {
-    flex:1; min-height:160px; border:2px dashed var(--line); border-radius:14px;
-    display:flex; align-items:center; justify-content:center;
-    color:#a5b4c4; font-size:13.5px; font-weight:600; text-align:center; line-height:1.6;
-  }
 
   /* ---------- section view ---------- */
   .sec-bar { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
@@ -617,6 +607,69 @@
   #lightbox.show { display:flex; }
   #lightbox img { max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.55); }
 
+  /* ---------- スマホ最適化（〜600px） ---------- */
+  @media (max-width: 600px) {
+    header { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+    .hd-row { flex-wrap:wrap; gap:6px; padding:8px 0; }
+    .hd-title { font-size:15px; gap:6px; }
+    .searchbox { order:9; flex-basis:100%; }
+    .searchbox input { height:42px; font-size:16px; }
+    .hd-btn { height:40px; padding:0 10px; font-size:12.5px; }
+    .hd-btn.ic { padding:0 9px; font-size:16px; }
+
+    main { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+    .mode-tab { height:44px; font-size:14px; }
+    .fz-tabs .mode-tab { height:38px; font-size:13.5px; }
+    .stats { gap:6px; }
+    .stat { padding:8px 11px; gap:5px; }
+    .stat b { font-size:20px; }
+    .stat span { font-size:11.5px; }
+    .hint { font-size:12.5px; }
+    .recent-strip { min-width:0; }
+
+    .ov-wrap { padding:8px; border-radius:14px; }
+    .ov-cols { gap:6px; }
+    .ov-col { gap:6px; }
+    .ov-container { border-radius:10px; }
+    .ov-ct-head { padding:6px 7px; }
+    .ov-ct-head .letter { font-size:15px; letter-spacing:.06em; }
+    .ov-ct-head .used { font-size:10px; }
+    .ov-sec { min-height:44px; padding:0 5px; gap:3px; justify-content:space-between; }
+    .ov-sec .n { font-size:11px; min-width:10px; }
+    .ov-sec .lb { display:none; }          /* BOX名はBOXを開けば見えるので省略 */
+    .ov-sec .ct { font-size:11px; padding:3px 7px; flex:0 0 auto; }
+
+    .sec-bar { gap:8px; }
+    .sec-bar .back { height:40px; padding:0 12px; font-size:13.5px; }
+    .sec-title { font-size:18px; gap:7px; }
+    .sec-label { padding:5px 11px; font-size:12.5px; }
+    .sec-nav { gap:6px; }
+    .sec-nav button { width:42px; height:40px; }
+    .sec-nav .sel-toggle { padding:0 11px; font-size:12.5px; }
+
+    .sub-wrap { padding:8px; border-radius:14px; overflow-x:auto; }
+    .sub-grid { gap:3px; }
+    .sub-head { font-size:10.5px; min-height:22px; border-radius:5px; }
+    .sub-cell { min-height:46px; border-radius:7px; padding:2px; }
+    .sub-cell .plus { font-size:15px; }
+    .sub-cell.filled .nm { font-size:10px; -webkit-line-clamp:2; line-height:1.15; }
+    .sub-cell.filled .qt { font-size:9.5px; }
+    .sub-cell .checkbadge { font-size:10px; top:1px; right:2px; }
+
+    .modal { padding:18px 16px; border-radius:16px; }
+    .modal h2 { font-size:16.5px; }
+    .btn { min-width:96px; height:48px; font-size:15px; }
+    .btn-row { gap:8px; }
+    .gs-opts { gap:8px; }
+    .gs-opt { padding:14px 8px; }
+    .gs-opt b { font-size:17px; }
+
+    #select-bar, #move-banner { font-size:12.5px; padding:8px 10px; }
+    #select-bar button, #move-banner button { padding:7px 10px; font-size:12px; }
+    .rc-row { padding:12px 12px; }
+    .step-thumb { flex:0 0 66px; width:66px; height:66px; }
+  }
+
   /* ---------- login ---------- */
   #login-overlay {
     position:fixed; inset:0; z-index:80; display:none;
@@ -1006,7 +1059,7 @@ const firebaseConfig = {
 const FREEZERS = {
   f80:  { label: '-80℃',  pfx: '',
           cols: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'], tiers: 9,
-          layout: [['A','B','C'], ['D','E','F'], ['G','H','I'], ['J','K','L'], ['M','N','O'], []] },
+          layout: [['A','B','C'], ['D','E','F'], ['G','H','I'], ['J','K','L'], ['M','N','O']] },
   f150: { label: '-150℃', pfx: '150.',
           cols: ['A','B','C','D','E','F','G','H','I','J','K','L'], tiers: 10,
           layout: [['A','B','C'], ['D','E','F'], ['G','H','I'], ['J','K','L']] }
@@ -1151,10 +1204,10 @@ function renderHome() {
   const F = FREEZERS[curFz];
   const grid = document.getElementById('ov-grid');
   grid.className = 'ov-cols' + (curFz === 'f150' ? ' fz-cold' : '');
+  grid.style.gridTemplateColumns = `repeat(${F.layout.length}, minmax(0, 1fr))`;
   let html = '';
   for (const col of F.layout) {
     html += '<div class="ov-col">';
-    if (col.length === 0) html += '<div class="ov-space">空き<br>スペース</div>';
     for (const L of col) {
       let used = 0;
       let rows = '';
@@ -1255,7 +1308,10 @@ function renderSection() {
     }
   }
   const gridEl = document.getElementById('sub-grid');
-  gridEl.style.gridTemplateColumns = `26px repeat(${nSub}, 1fr)`;
+  const narrow = window.innerWidth <= 600;
+  gridEl.style.gridTemplateColumns = narrow
+    ? `18px repeat(${nSub}, minmax(30px, 1fr))`
+    : `26px repeat(${nSub}, 1fr)`;
   gridEl.innerHTML = html;
   highlightPos = null;
 
@@ -2734,6 +2790,12 @@ function initFirebase() {
     }
   });
 }
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (currentSec) renderSection(); }, 200);
+});
 
 /* ================= start ================= */
 goHome();
