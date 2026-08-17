@@ -2190,12 +2190,50 @@ function redoLast() {
 }
 
 /* ================= 手順書（レシピ帳） ================= */
+/* 記入例の手順書（手順書が1件も無いときだけ読み込みボタンを表示する） */
+const SAMPLE_RECIPE = {
+  title: '免疫蛍光染色（IF）操作手順',
+  steps: [
+    { text: '細胞の回収・調製\n浮遊細胞を回収し、必要に応じて細胞数および生存率を測定する。細胞懸濁液を 1 × 10⁶ cells/mL に調整し、100 µL/sample（1 × 10⁵ cells/sample）を使用する。', note: '【全工程共通の注意】Cytospin終了後から封入まで細胞スポットを乾燥させない／各種試薬を細胞スポットへ直接吹き付けない／吸引口・ピペットチップを細胞スポットへ接触させない／液の添加・除去は原則としてPAPペンの円の端から静かに行う／蛍光標識二次抗体添加後は可能な限り遮光する。', minutes: '', pause: '', imageId: null },
+    { text: 'スライドの準備\nコートスライドグラスのコート面を確認し、PAPペンで細胞沈着位置に円を描く。スライドグラス、ろ紙、プラスチック容器、ホルダーを正しく組み立てる。', note: '', minutes: '', pause: '', imageId: null },
+    { text: '細胞懸濁液の充填\n細胞懸濁液を穏やかに再懸濁し、気泡が入らないよう容器下部から 100 µL を静かに充填する。', note: '', minutes: '', pause: '', imageId: null },
+    { text: 'Cytospin\nCytospin装置で 200〜400 rpm、2〜5分 処理する。', note: '標準開始条件は 300 rpm、3分 とする。終了後は細胞スポットを乾燥させず、直ちに固定へ進む。', minutes: '2〜5分', pause: '', imageId: null },
+    { text: '固定（4% PFA）\n細胞スポットへ 4% PFA 200〜500 µL をPAPペンの円の端から静かに添加し、室温で 10〜15分間 固定する。', note: '', minutes: '10〜15分', pause: '', imageId: null },
+    { text: '固定後の洗浄\nアスピレーターまたはマイクロピペットでPFAを円の端から静かに除去する。PBS 200〜500 µL を添加して静かに除去し、1〜2回洗浄する。', note: '操作中は細胞スポットを乾燥させない。', minutes: '', pause: '', imageId: null },
+    { text: '膜透過化（細胞内抗原を染色する場合のみ）\n0.1% Triton X-100/PBS 200〜500 µL を円の端から静かに添加し、室温で 3〜5分間 反応させる。透過化液を除去し、PBS 200〜500 µL で 2〜3回洗浄する。', note: '細胞表面抗原を染色する場合は、この工程では膜透過化を行わず、そのままブロッキングへ進む。', minutes: '3〜5分', pause: '', imageId: null },
+    { text: 'ブロッキング\n4% BSA/PBS 200〜500 µL を円の端から静かに添加し、室温で 30〜60分間 静置する。', note: '4% BSA/PBS を静かに除去し、原則としてPBS洗浄を行わず一次抗体反応へ進む。', minutes: '30〜60分', pause: '', imageId: null },
+    { text: '一次抗体の添加\n一次抗体を 4% BSA/PBS で、製品データシートまたは検証済み条件に従って希釈する。100〜200 µL/sample を細胞スポット全体を覆うように添加する。', note: '必要に応じて約 500 µL を使用してもよい。細胞表面抗原を評価する場合は、この工程まで透過化剤を使用しない。', minutes: '', pause: '湿潤箱内で 4℃・overnight（一晩静置）', imageId: null },
+    { text: '一次抗体の除去・洗浄\n翌日、一次抗体液を静かに除去する。PBS 200〜500 µL で必要に応じて 1〜5分間 静置後に除去し、合計 1〜3回洗浄する。', note: '', minutes: '', pause: '', imageId: null },
+    { text: '二次抗体反応\n蛍光標識二次抗体を 4% BSA/PBS で 1:500〜1:1000 を目安に希釈し、100〜200 µL/sample を細胞スポット全体へ添加する。湿潤箱内で 室温 45〜60分間、遮光して反応させる。', note: '二次抗体添加後は可能な限り遮光して操作する。', minutes: '45〜60分', pause: '', imageId: null },
+    { text: '二次抗体の除去・洗浄\n二次抗体液を除去し、PBS 200〜500 µL で必要に応じて 1〜5分間 静置後に除去し、合計 1〜3回洗浄する。', note: '', minutes: '', pause: '', imageId: null },
+    { text: '追加の細胞内染色（必要な場合のみ）\n細胞表面抗原を非透過化条件で染色した後に細胞内標的を追加染色する場合は、0.1% Triton X-100/PBS 200〜500 µL を添加し、室温で 3〜5分間 透過化する。PBSで 2〜3回洗浄したのち、使用する蛍光プローブ等を製品データシートまたは検証済み条件に従って反応させ、染色後はPBSで十分に洗浄する。', note: '追加の細胞内染色を行わない場合はこの工程を省略する。', minutes: '3〜5分＋反応時間', pause: '', imageId: null },
+    { text: '核染色\nDAPIまたはHoechstを所定濃度に調製し、細胞スポット全体を覆う量を添加する。室温で 5〜10分間、遮光して反応させ、PBSで 1〜3回洗浄する。', note: '核染色剤入り封入剤を使用する場合、核染色工程は省略する。', minutes: '5〜10分', pause: '', imageId: null },
+    { text: '封入\n最終洗浄後、細胞スポットを乾燥させない状態で余分なPBSを除去する。抗退色封入剤を適量添加し、気泡が入らないようにカバーガラスをゆっくり載せる。', note: '', minutes: '', pause: 'スライドを水平に保ち、4℃・遮光条件で保存（可能な限り早期に観察する）', imageId: null },
+    { text: '観察・撮影\n蛍光顕微鏡で観察・撮影する。', note: '比較するサンプルでは、対物レンズ、励起光強度、露光時間、ゲイン、Z-stack条件および画像処理条件を可能な限り統一する。', minutes: '', pause: '', imageId: null }
+  ]
+};
+function addSampleRecipe() {
+  if (!db || !currentUser) return;
+  if (!confirm('記入例として「' + SAMPLE_RECIPE.title + '」（' + SAMPLE_RECIPE.steps.length + '手順）を追加します。よろしいですか？')) return;
+  const now = Date.now(), me = currentUser.email;
+  db.collection('recipes').add({
+    title: SAMPLE_RECIPE.title,
+    steps: SAMPLE_RECIPE.steps.map(s => Object.assign({}, s)),
+    createdAt: now, createdBy: me, updatedAt: now, updatedBy: me
+  }).then(ref => { showToast('記入例を追加しました'); openRecipe(ref.id); })
+    .catch(() => showToast('追加に失敗しました'));
+}
+
+
 function renderRecipeList() {
   const box = document.getElementById('rc-list');
   const arr = Object.keys(state.recipes).map(id => Object.assign({ id }, state.recipes[id]));
   arr.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   if (!arr.length) {
-    box.innerHTML = `<div class="rc-empty">${firstLoaded ? 'まだ手順書がありません。「＋ 新しい手順書」から作成できます。' : 'クラウドと同期しています…'}</div>`;
+    box.innerHTML = firstLoaded
+      ? `<div class="rc-empty">まだ手順書がありません。「＋ 新しい手順書」から作成できます。<br>
+           <button class="rc-new" style="margin-top:14px" onclick="addSampleRecipe()">記入例を読み込む（免疫蛍光染色SOP）</button></div>`
+      : '<div class="rc-empty">クラウドと同期しています…</div>';
     return;
   }
   box.innerHTML = arr.map(r => {
