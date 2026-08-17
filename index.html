@@ -36,6 +36,11 @@
     --rose-dim: rgba(225,29,72,.13);
     --orange: #d95f10;
     --orange-dim: rgba(234,88,12,.15);
+    --cold: #0f4c73;
+    --cold-head: #123b5c;
+    --cold-row: #dcefFB;
+    --cold-badge: #7cc8ee;
+    --cold-line: rgba(12,74,110,.26);
     --navy: #14283f;
     --navy-2: #1d3552;
     --navy-soft: #33506f;
@@ -190,6 +195,15 @@
   .ov-sec.empty:active { background:rgba(250,204,21,.45); }
   .ov-sec.empty .ct { color:#4a3b06; background:var(--amber-badge); font-weight:900; }
   .ov-sec.empty .lb { color:#7a5c08; }
+  /* -150℃フリーザー: 空の段は黄色ではなく水色ベース */
+  .fz-cold .ov-container { border-color:var(--cold-line); }
+  .fz-cold .ov-ct-head { background:var(--cold-head); }
+  .fz-cold .ov-sec.empty { background:var(--cold-row); }
+  .fz-cold .ov-sec.empty:active { background:#b9e0f5; }
+  .fz-cold .ov-sec.empty .ct { color:#06324a; background:var(--cold-badge); }
+  .fz-cold .ov-sec.empty .lb { color:var(--cold); }
+  .fz-cold .ov-sec .n { color:#5b7f9c; }
+  .mode-tab.active.cold { background:var(--cold); }
   .ov-space {
     flex:1; min-height:160px; border:2px dashed var(--line); border-radius:14px;
     display:flex; align-items:center; justify-content:center;
@@ -1125,7 +1139,10 @@ function setFreezer(fz) {
 function updateFzTabs() {
   FZ_IDS.forEach(id => {
     const b = document.getElementById('fz-' + id);
-    if (b) b.classList.toggle('active', id === curFz);
+    if (b) {
+      b.classList.toggle('active', id === curFz);
+      b.classList.toggle('cold', id === 'f150');
+    }
   });
 }
 
@@ -1133,6 +1150,7 @@ function renderHome() {
   updateFzTabs();
   const F = FREEZERS[curFz];
   const grid = document.getElementById('ov-grid');
+  grid.className = 'ov-cols' + (curFz === 'f150' ? ' fz-cold' : '');
   let html = '';
   for (const col of F.layout) {
     html += '<div class="ov-col">';
@@ -1169,7 +1187,7 @@ function renderHome() {
   const hintEl = document.getElementById('home-hint');
   if (!firstLoaded) hintEl.textContent = 'クラウドと同期しています…';
   else if (totalItems === 0) hintEl.textContent = `${F.label}フリーザーはまだ空です。段をタップして収納を始めましょう（各コンテナは上から1〜${F.tiers}段）。`;
-  else hintEl.textContent = `${F.label}フリーザー：実際の配置と同じ並びです（各コンテナは上から1〜${F.tiers}段）。段をタップすると中のマスが開きます。黄色は空の段です。`;
+  else hintEl.textContent = `${F.label}フリーザー：実際の配置と同じ並びです（各コンテナは上から1〜${F.tiers}段）。段をタップすると中のマスが開きます。${curFz === 'f150' ? '水色' : '黄色'}は空の段です。`;
   renderRecent();
 }
 
