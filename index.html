@@ -689,10 +689,7 @@
     </div>
     <div class="map-toolbar">
       <div class="hint" id="home-hint" style="margin:0">実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。</div>
-      <div class="map-tools">
-        <button class="pick-open" id="gridsize-btn" onclick="openGridSize()">既定のマス数: 9×9</button>
-        <button class="pick-open" id="swap-btn" onclick="toggleSwapMode()">BOXを入れ替える</button>
-      </div>
+      <button class="pick-open" id="swap-btn" onclick="toggleSwapMode()">BOXを入れ替える</button>
     </div>
     <div class="ov-wrap"><div class="ov-cols" id="ov-grid"></div></div>
     </div><!-- /home-freezer -->
@@ -854,27 +851,8 @@
       <button type="button" class="gs-opt" id="bs-9" onclick="applyBoxSize(9)"><b>9 × 9</b><span>81マス</span></button>
       <button type="button" class="gs-opt" id="bs-10" onclick="applyBoxSize(10)"><b>10 × 10</b><span>100マス</span></button>
     </div>
-    <div class="gs-opts" style="margin-top:12px">
-      <button type="button" class="gs-opt" id="bs-default" onclick="applyBoxSize(null)"><b>既定に合わせる</b><span id="bs-def"></span></button>
-    </div>
     <div class="btn-row">
       <button class="btn ghost" onclick="closeModal('m-boxsize')">閉じる</button>
-    </div>
-  </div>
-</div>
-
-<!-- grid size modal -->
-<div class="modal-bg" id="m-gridsize">
-  <div class="modal">
-    <h2>既定のマス数</h2>
-    <p class="pdf-note">個別に設定していないBOXに適用されます。変更は全端末に反映されます。<br>
-      BOXごとの設定は、そのBOXを開いて「マス数」から変更できます。</p>
-    <div class="gs-opts">
-      <button type="button" class="gs-opt" id="gs-9" onclick="applyGridSize(9)"><b>9 × 9</b><span>81マス</span></button>
-      <button type="button" class="gs-opt" id="gs-10" onclick="applyGridSize(10)"><b>10 × 10</b><span>100マス</span></button>
-    </div>
-    <div class="btn-row">
-      <button class="btn ghost" onclick="closeModal('m-gridsize')">閉じる</button>
     </div>
   </div>
 </div>
@@ -1683,72 +1661,33 @@ function doMoveMulti(destSec, sr, sc) {
   showToast(`${movingItems.length}件を ${destSec} に移動しました`);
 }
 
-/* ================= マス数の設定（既定 + BOXごと） ================= */
-function updateGridSizeUI() {
-  const btn = document.getElementById('gridsize-btn');
-  if (btn) btn.textContent = `既定のマス数: ${defaultSub}×${defaultSub}`;
-  const a = document.getElementById('gs-9'), b = document.getElementById('gs-10');
-  if (a) a.classList.toggle('current', defaultSub === 9);
-  if (b) b.classList.toggle('current', defaultSub === 10);
-}
-function fmtOutside(list) {
-  return list.slice(0, 12).map(o => `・${o.sec} ${o.r}段 ${o.c}列 ${o.name}`).join('\n')
-    + (list.length > 12 ? `\n…ほか ${list.length - 12} 件` : '');
-}
-
-/* ---- 既定のマス数（個別設定のないBOXに適用） ---- */
-function openGridSize() { updateGridSizeUI(); openModal('m-gridsize'); }
-function applyGridSize(n) {
-  if (!db || !currentUser) return;
-  if (n === defaultSub) { closeModal('m-gridsize'); return; }
-  if (n < defaultSub) {
-    const out = [];
-    for (const k in state.items) {
-      const p = parseKey(k);
-      if (state.subs[p.sec]) continue;               // 個別設定のBOXは既定の影響を受けない
-      if (p.r > n || p.c > n) out.push(Object.assign({}, p, { name: state.items[k].name }));
-    }
-    out.sort((a, b) => a.sec.localeCompare(b.sec) || a.r - b.r || a.c - b.c);
-    if (out.length) {
-      alert(`既定を ${n}×${n} に変更できません。\n\n既定に従うBOXの ${n}段・${n}列より外に ${out.length} 品が入っています。`
-        + `このまま変更すると見えなくなるため、先に移動・消費するか、そのBOXだけ個別に大きいマス数を設定してください。\n\n${fmtOutside(out)}`);
-      return;
-    }
-  }
-  if (!confirm(`既定のマス数を ${n}×${n}（${n * n}マス）にします。個別に設定したBOXはそのままです。よろしいですか？`)) return;
-  db.collection('meta').doc('config').set({ sub: n, by: currentUser.email, ts: Date.now() }, { merge: true })
-    .then(() => showToast(`既定のマス数を ${n}×${n} にしました`))
-    .catch(() => showToast('変更に失敗しました'));
-  closeModal('m-gridsize');
-}
-
-/* ---- BOXごとのマス数 ---- */
+/* ================= BOXごとのマス数（9×9 / 10×10） ================= */
 function openBoxSize() {
   const sec = currentSec;
   if (!sec) return;
+  const cur = subOf(sec);
   document.getElementById('bs-loc').textContent = sec;
-  document.getElementById('bs-def').textContent = `${defaultSub}×${defaultSub}`;
-  const cur = state.subs[sec] || null;
   document.getElementById('bs-9').classList.toggle('current', cur === 9);
   document.getElementById('bs-10').classList.toggle('current', cur === 10);
-  document.getElementById('bs-default').classList.toggle('current', !cur);
   openModal('m-boxsize');
 }
-function applyBoxSize(n) {  // n = 9 | 10 | null（既定に合わせる）
+function applyBoxSize(n) {
   const sec = currentSec;
   if (!db || !currentUser || !sec) return;
-  const eff = n || defaultSub;
-  if (eff < subOf(sec)) {
-    const out = secItems(sec).filter(it => it.r > eff || it.c > eff);
+  if (n === subOf(sec)) { closeModal('m-boxsize'); return; }
+  if (n < subOf(sec)) {
+    // 縮小時: 範囲外に品が残っていると見えなくなるため、先に片付けてもらう
+    const out = secItems(sec).filter(it => it.r > n || it.c > n);
     if (out.length) {
-      alert(`${sec} を ${eff}×${eff} にできません。\n\n${eff}段・${eff}列より外に ${out.length} 品が入っています。`
-        + `先に移動または消費してください。\n\n${fmtOutside(out)}`);
+      const list = out.slice(0, 12).map(o => `・${o.r}段 ${o.c}列 ${o.name}`).join('\n')
+        + (out.length > 12 ? `\n…ほか ${out.length - 12} 件` : '');
+      alert(`${sec} を ${n}×${n} にできません。\n\n${n}段・${n}列より外に ${out.length} 品が入っています。`
+        + `先に移動または消費してください。\n\n${list}`);
       return;
     }
   }
-  const payload = n ? { sub: n } : { sub: FV().delete() };
-  db.collection('labels').doc(sec).set(payload, { merge: true })
-    .then(() => showToast(n ? `${sec} のマス数を ${n}×${n} にしました` : `${sec} を既定（${defaultSub}×${defaultSub}）に合わせました`))
+  db.collection('labels').doc(sec).set({ sub: n }, { merge: true })
+    .then(() => showToast(`${sec} のマス数を ${n}×${n} にしました`))
     .catch(() => showToast('変更に失敗しました'));
   closeModal('m-boxsize');
 }
@@ -2544,7 +2483,7 @@ function startSync() {
     recentRaw = raw;
     recomputeRecent();
   }, () => {});
-  // BOXのマス数（9×9 / 10×10）
+  // 個別設定のないBOXの既定値（UIは無し。過去に全体設定した値が残っていれば尊重する）
   unsubConfig = db.collection('meta').doc('config').onSnapshot(doc => {
     const v = (doc.exists && doc.data().sub === 10) ? 10 : 9;
     if (v !== defaultSub) {
@@ -2553,7 +2492,6 @@ function startSync() {
       cancelMove();
       rerender();
     }
-    updateGridSizeUI();
   }, () => {});
   // 「最近の品名」のリセット時刻（全端末共有）
   unsubRecentReset = db.collection('meta').doc('recentReset').onSnapshot(doc => {
@@ -2643,7 +2581,7 @@ function initFirebase() {
       firstLoaded = false;
       selectMode = false; selected.clear(); moveFrom = null; moveMulti = null;
       swapMode = false; swapFirst = null; updateSwapBtn();
-      defaultSub = 9; state.subs = {}; updateGridSizeUI();
+      defaultSub = 9; state.subs = {};
       currentRecipeId = null; editingRecipeId = null; editSteps = []; editDirty = false;
       Object.keys(imgCache).forEach(k => delete imgCache[k]);
       undoStack.length = 0; redoStack.length = 0; updateUndoUI();
