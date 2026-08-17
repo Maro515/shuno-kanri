@@ -226,7 +226,7 @@
   .sub-wrap { background:var(--glass); border:1px solid var(--line2); border-radius:18px; padding:14px; box-shadow:var(--shadow); }
   .sub-grid {
     display:grid;
-    grid-template-columns: 26px repeat(9, 1fr); /* 列数はJSでSUBに合わせて上書き */
+    grid-template-columns: 26px repeat(9, 1fr); /* 列数はJSでBOXごとのマス数に合わせて上書き */
     gap:4px;
   }
   .sub-head {
@@ -690,7 +690,7 @@
     <div class="map-toolbar">
       <div class="hint" id="home-hint" style="margin:0">実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の 9×9 マスが開きます。黄色は空の段です。</div>
       <div class="map-tools">
-        <button class="pick-open" id="gridsize-btn" onclick="openGridSize()">マス数: 9×9</button>
+        <button class="pick-open" id="gridsize-btn" onclick="openGridSize()">既定のマス数: 9×9</button>
         <button class="pick-open" id="swap-btn" onclick="toggleSwapMode()">BOXを入れ替える</button>
       </div>
     </div>
@@ -711,7 +711,7 @@
     <div class="sec-bar">
       <button class="back" onclick="goHome()">← 全体</button>
       <div>
-        <div class="sec-title"><span id="sec-title">A-1</span><button class="sec-label" id="sec-label" onclick="openLabelEdit()"></button></div>
+        <div class="sec-title"><span id="sec-title">A-1</span><button class="sec-label" id="sec-label" onclick="openLabelEdit()"></button><button class="sec-label unset" id="sec-sub-btn" onclick="openBoxSize()">マス数</button></div>
         <div class="sec-count" id="sec-count"></div>
       </div>
       <div class="sec-nav">
@@ -844,12 +844,31 @@
   </div>
 </div>
 
+<!-- box size modal (per BOX) -->
+<div class="modal-bg" id="m-boxsize">
+  <div class="modal">
+    <h2><span class="loc-chip" id="bs-loc"></span>このBOXのマス数</h2>
+    <p class="pdf-note">このBOXだけの設定です。ほかのBOXには影響しません。<br>
+      収納済みの品はそのままの位置に残ります。</p>
+    <div class="gs-opts">
+      <button type="button" class="gs-opt" id="bs-9" onclick="applyBoxSize(9)"><b>9 × 9</b><span>81マス</span></button>
+      <button type="button" class="gs-opt" id="bs-10" onclick="applyBoxSize(10)"><b>10 × 10</b><span>100マス</span></button>
+    </div>
+    <div class="gs-opts" style="margin-top:12px">
+      <button type="button" class="gs-opt" id="bs-default" onclick="applyBoxSize(null)"><b>既定に合わせる</b><span id="bs-def"></span></button>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="closeModal('m-boxsize')">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- grid size modal -->
 <div class="modal-bg" id="m-gridsize">
   <div class="modal">
-    <h2>BOXのマス数</h2>
-    <p class="pdf-note">各BOX（段）の中に並ぶマスの数です。変更は全端末に反映されます。<br>
-      収納済みの品はそのままの位置に残ります。</p>
+    <h2>既定のマス数</h2>
+    <p class="pdf-note">個別に設定していないBOXに適用されます。変更は全端末に反映されます。<br>
+      BOXごとの設定は、そのBOXを開いて「マス数」から変更できます。</p>
     <div class="gs-opts">
       <button type="button" class="gs-opt" id="gs-9" onclick="applyGridSize(9)"><b>9 × 9</b><span>81マス</span></button>
       <button type="button" class="gs-opt" id="gs-10" onclick="applyGridSize(10)"><b>10 × 10</b><span>100マス</span></button>
@@ -960,10 +979,13 @@ const firebaseConfig = {
 /* ================= data ================= */
 const COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'];
 const ROWS = [1,2,3,4,5,6,7,8,9];
-let SUB = 9;   // BOX内のマス数（9 or 10）。Firestore meta/config で全端末共有
+let defaultSub = 9;   // 既定のマス数（meta/config.sub・個別設定のないBOXに適用）
+// BOXごとのマス数は labels/{区画} の sub フィールド（= state.subs[区画]）。未設定なら既定に従う
+const subOf = sec => state.subs[sec] || defaultSub;
+const FV = () => firebase.firestore.FieldValue;
 
 // Firestore が正。state は各端末のミラー（onSnapshot で更新される）
-let state = { items: {}, labels: {}, presets: [], recipes: {} };
+let state = { items: {}, labels: {}, subs: {}, presets: [], recipes: {} };
 // items: { "A-3:2:5": {name, qty, note, addedAt, addedBy} }
 // labels: { "A-1": "やさい" }
 // presets: ["きゅうり", ...]（よく使う品名・全端末で共有）
@@ -1101,7 +1123,7 @@ function renderHome() {
   const hintEl = document.getElementById('home-hint');
   if (!firstLoaded) hintEl.textContent = 'クラウドと同期しています…';
   else if (totalItems === 0) hintEl.textContent = 'まだ何も収納されていません。段をタップして収納を始めましょう（各コンテナは上から1〜9段）。';
-  else hintEl.textContent = `実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中の ${SUB}×${SUB} マスが開きます。黄色は空の段です。`;
+  else hintEl.textContent = '実際の配置と同じ並びです（各コンテナは上から1〜9段）。段をタップすると中のマスが開きます。黄色は空の段です。';
   renderRecent();
 }
 
@@ -1138,7 +1160,10 @@ function renderSection() {
     lblBtn.classList.add('unset');
   }
   const items = secItems(sec);
-  document.getElementById('sec-count').textContent = `${items.length} / ${SUB * SUB} マス使用中`;
+  const nSub = subOf(sec);
+  document.getElementById('sec-count').textContent = `${items.length} / ${nSub * nSub} マス使用中`;
+  const subBtn = document.getElementById('sec-sub-btn');
+  if (subBtn) subBtn.textContent = `マス数 ${nSub}×${nSub}`;
 
   const selBtn = document.getElementById('sec-select-btn');
   if (selBtn) { selBtn.textContent = selectMode ? '選択中' : '☑ 選択'; selBtn.classList.toggle('active', selectMode); }
@@ -1147,10 +1172,10 @@ function renderSection() {
   for (const it of items) map[`${it.r}:${it.c}`] = it;
 
   let html = '<div class="sub-head"></div>';
-  for (let c = 1; c <= SUB; c++) html += `<div class="sub-head">${c}</div>`;
-  for (let r = 1; r <= SUB; r++) {
+  for (let c = 1; c <= nSub; c++) html += `<div class="sub-head">${c}</div>`;
+  for (let r = 1; r <= nSub; r++) {
     html += `<div class="sub-head">${r}</div>`;
-    for (let c = 1; c <= SUB; c++) {
+    for (let c = 1; c <= nSub; c++) {
       const it = map[`${r}:${c}`];
       const pulse = highlightPos && highlightPos.r === r && highlightPos.c === c ? ' pulse' : '';
       if (it) {
@@ -1164,7 +1189,7 @@ function renderSection() {
     }
   }
   const gridEl = document.getElementById('sub-grid');
-  gridEl.style.gridTemplateColumns = `26px repeat(${SUB}, 1fr)`;
+  gridEl.style.gridTemplateColumns = `26px repeat(${nSub}, 1fr)`;
   gridEl.innerHTML = html;
   highlightPos = null;
 
@@ -1216,7 +1241,7 @@ function openAddForm(sec, r, c) {
   document.getElementById('mf-qty').value = 1;
   document.getElementById('mf-note').value = '';
   document.getElementById('mf-qty-fld').style.display = '';
-  document.getElementById('mf-qty').max = SUB * SUB;
+  document.getElementById('mf-qty').max = subOf(sec) * subOf(sec);
   updateSuggestions();
   renderFormChips();
   openModal('m-form');
@@ -1242,16 +1267,18 @@ function openEdit() {
 
 function bumpQty(d) {
   const el = document.getElementById('mf-qty');
-  el.value = Math.min(SUB * SUB, Math.max(1, (parseInt(el.value) || 1) + d));
+  const cap = (formTarget && formTarget.sec) ? subOf(formTarget.sec) ** 2 : defaultSub ** 2;
+  el.value = Math.min(cap, Math.max(1, (parseInt(el.value) || 1) + d));
 }
 
 /* collect up to n empty cells starting from (r,c), scanning left→right / top→bottom */
 function emptyCellsFrom(sec, r, c, n) {
-  const start = (r - 1) * SUB + (c - 1);
+  const g = subOf(sec);
+  const start = (r - 1) * g + (c - 1);
   const out = [];
-  for (let idx = start; idx < SUB * SUB && out.length < n; idx++) {
-    const rr = Math.floor(idx / SUB) + 1;
-    const cc = (idx % SUB) + 1;
+  for (let idx = start; idx < g * g && out.length < n; idx++) {
+    const rr = Math.floor(idx / g) + 1;
+    const cc = (idx % g) + 1;
     if (!state.items[keyOf(sec, rr, cc)]) out.push([rr, cc]);
   }
   return out;
@@ -1263,8 +1290,8 @@ function submitForm() {
   if (!name) { showToast('品名を入力してください'); return; }
 
   if (formTarget.mode === 'add') {
-    const qty = Math.min(SUB * SUB, Math.max(1, parseInt(document.getElementById('mf-qty').value) || 1));
     const { sec, r, c } = formTarget;
+    const qty = Math.min(subOf(sec) ** 2, Math.max(1, parseInt(document.getElementById('mf-qty').value) || 1));
     const targets = emptyCellsFrom(sec, r, c, qty);
     if (targets.length === 0) { showToast('空きマスがありません'); return; }
     const now = Date.now();
@@ -1402,8 +1429,8 @@ function saveLabel() {
   const sec = currentSec;
   const before = state.labels[sec] || null;
   const ref = db.collection('labels').doc(sec);
-  if (v) ref.set({ name: v }).catch(() => showToast('保存に失敗しました'));
-  else ref.delete().catch(() => {});
+  if (v) ref.set({ name: v }, { merge: true }).catch(() => showToast('保存に失敗しました'));
+  else ref.set({ name: FV().delete() }, { merge: true }).catch(() => {});  // マス数設定は残す
   pushUndo({ type: 'label', sec, before, after: v || null });
   closeModal('m-label');
   showToast(v ? `区画 ${sec} に「${v}」と名前を付けました` : `区画 ${sec} の名前を消しました`);
@@ -1550,17 +1577,18 @@ function buildExcelWorkbook() {
     const label = state.labels[sec];
     const grid = [];
     grid.push([`区画 ${sec}${label ? '（' + label + '）' : ''}`]);
-    grid.push(['段＼列'].concat(Array.from({ length: SUB }, (_, i) => i + 1)));
-    for (let r = 1; r <= SUB; r++) {
+    const g = subOf(sec);
+    grid.push(['段＼列'].concat(Array.from({ length: g }, (_, i) => i + 1)));
+    for (let r = 1; r <= g; r++) {
       const row = [`${r}段`];
-      for (let c = 1; c <= SUB; c++) {
+      for (let c = 1; c <= g; c++) {
         const it = map[`${r}:${c}`];
         row.push(it ? (it.qty > 1 ? `${it.name} ×${it.qty}` : it.name) : '');
       }
       grid.push(row);
     }
     const ws = XLSX.utils.aoa_to_sheet(grid);
-    ws['!cols'] = [{ wch: 7 }].concat(Array(SUB).fill({ wch: 12 }));
+    ws['!cols'] = [{ wch: 7 }].concat(Array(g).fill({ wch: 12 }));
     XLSX.utils.book_append_sheet(wb, ws, sec);
   }
   return wb;
@@ -1581,10 +1609,11 @@ function applyMoves(batch, moves, reverse) {
 }
 // (r,c)から読み順で n 個の「置ける」マスを集める。freed に含まれるキー（移動元）も空き扱い
 function emptyCellsForMove(sec, r, c, n, freed) {
-  const start = (r - 1) * SUB + (c - 1);
+  const g = subOf(sec);
+  const start = (r - 1) * g + (c - 1);
   const out = [];
-  for (let idx = start; idx < SUB * SUB && out.length < n; idx++) {
-    const rr = Math.floor(idx / SUB) + 1, cc = (idx % SUB) + 1;
+  for (let idx = start; idx < g * g && out.length < n; idx++) {
+    const rr = Math.floor(idx / g) + 1, cc = (idx % g) + 1;
     const k = keyOf(sec, rr, cc);
     if (!state.items[k] || freed.has(k)) out.push([rr, cc]);
   }
@@ -1654,47 +1683,74 @@ function doMoveMulti(destSec, sr, sc) {
   showToast(`${movingItems.length}件を ${destSec} に移動しました`);
 }
 
-/* ================= BOXのマス数（9×9 / 10×10） ================= */
+/* ================= マス数の設定（既定 + BOXごと） ================= */
 function updateGridSizeUI() {
   const btn = document.getElementById('gridsize-btn');
-  if (btn) btn.textContent = `マス数: ${SUB}×${SUB}`;
+  if (btn) btn.textContent = `既定のマス数: ${defaultSub}×${defaultSub}`;
   const a = document.getElementById('gs-9'), b = document.getElementById('gs-10');
-  if (a) a.classList.toggle('current', SUB === 9);
-  if (b) b.classList.toggle('current', SUB === 10);
+  if (a) a.classList.toggle('current', defaultSub === 9);
+  if (b) b.classList.toggle('current', defaultSub === 10);
 }
-function openGridSize() {
-  updateGridSizeUI();
-  openModal('m-gridsize');
+function fmtOutside(list) {
+  return list.slice(0, 12).map(o => `・${o.sec} ${o.r}段 ${o.c}列 ${o.name}`).join('\n')
+    + (list.length > 12 ? `\n…ほか ${list.length - 12} 件` : '');
 }
-/* 新しいマス数の外側（段・列が n を超える位置）にある品を集める */
-function itemsOutsideGrid(n) {
-  const out = [];
-  for (const k in state.items) {
-    const p = parseKey(k);
-    if (p.r > n || p.c > n) out.push(Object.assign({}, p, { name: state.items[k].name }));
-  }
-  out.sort((a, b) => a.sec.localeCompare(b.sec) || a.r - b.r || a.c - b.c);
-  return out;
-}
+
+/* ---- 既定のマス数（個別設定のないBOXに適用） ---- */
+function openGridSize() { updateGridSizeUI(); openModal('m-gridsize'); }
 function applyGridSize(n) {
   if (!db || !currentUser) return;
-  if (n === SUB) { closeModal('m-gridsize'); return; }
-  if (n < SUB) {
-    // 縮小時: 範囲外に品が残っていると見えなくなるため、先に片付けてもらう
-    const out = itemsOutsideGrid(n);
+  if (n === defaultSub) { closeModal('m-gridsize'); return; }
+  if (n < defaultSub) {
+    const out = [];
+    for (const k in state.items) {
+      const p = parseKey(k);
+      if (state.subs[p.sec]) continue;               // 個別設定のBOXは既定の影響を受けない
+      if (p.r > n || p.c > n) out.push(Object.assign({}, p, { name: state.items[k].name }));
+    }
+    out.sort((a, b) => a.sec.localeCompare(b.sec) || a.r - b.r || a.c - b.c);
     if (out.length) {
-      const list = out.slice(0, 12).map(o => `・${o.sec} ${o.r}段 ${o.c}列 ${o.name}`).join('\n');
-      alert(`${n}×${n} に変更できません。\n\n${n}段・${n}列より外に ${out.length} 品が入っています。`
-        + `このまま変更すると見えなくなるため、先に移動または消費してください。\n\n${list}`
-        + (out.length > 12 ? `\n…ほか ${out.length - 12} 件` : ''));
+      alert(`既定を ${n}×${n} に変更できません。\n\n既定に従うBOXの ${n}段・${n}列より外に ${out.length} 品が入っています。`
+        + `このまま変更すると見えなくなるため、先に移動・消費するか、そのBOXだけ個別に大きいマス数を設定してください。\n\n${fmtOutside(out)}`);
       return;
     }
   }
-  if (!confirm(`BOXのマス数を ${n}×${n}（${n * n}マス）に変更します。全端末に反映されます。よろしいですか？`)) return;
+  if (!confirm(`既定のマス数を ${n}×${n}（${n * n}マス）にします。個別に設定したBOXはそのままです。よろしいですか？`)) return;
   db.collection('meta').doc('config').set({ sub: n, by: currentUser.email, ts: Date.now() }, { merge: true })
-    .then(() => showToast(`マス数を ${n}×${n} に変更しました`))
+    .then(() => showToast(`既定のマス数を ${n}×${n} にしました`))
     .catch(() => showToast('変更に失敗しました'));
   closeModal('m-gridsize');
+}
+
+/* ---- BOXごとのマス数 ---- */
+function openBoxSize() {
+  const sec = currentSec;
+  if (!sec) return;
+  document.getElementById('bs-loc').textContent = sec;
+  document.getElementById('bs-def').textContent = `${defaultSub}×${defaultSub}`;
+  const cur = state.subs[sec] || null;
+  document.getElementById('bs-9').classList.toggle('current', cur === 9);
+  document.getElementById('bs-10').classList.toggle('current', cur === 10);
+  document.getElementById('bs-default').classList.toggle('current', !cur);
+  openModal('m-boxsize');
+}
+function applyBoxSize(n) {  // n = 9 | 10 | null（既定に合わせる）
+  const sec = currentSec;
+  if (!db || !currentUser || !sec) return;
+  const eff = n || defaultSub;
+  if (eff < subOf(sec)) {
+    const out = secItems(sec).filter(it => it.r > eff || it.c > eff);
+    if (out.length) {
+      alert(`${sec} を ${eff}×${eff} にできません。\n\n${eff}段・${eff}列より外に ${out.length} 品が入っています。`
+        + `先に移動または消費してください。\n\n${fmtOutside(out)}`);
+      return;
+    }
+  }
+  const payload = n ? { sub: n } : { sub: FV().delete() };
+  db.collection('labels').doc(sec).set(payload, { merge: true })
+    .then(() => showToast(n ? `${sec} のマス数を ${n}×${n} にしました` : `${sec} を既定（${defaultSub}×${defaultSub}）に合わせました`))
+    .catch(() => showToast('変更に失敗しました'));
+  closeModal('m-boxsize');
 }
 
 /* ================= BOX入れ替え（区画単位の入れ替え） ================= */
@@ -1744,11 +1800,13 @@ function buildSwapBatch(batch, secA, secB) {
     if (ia) batch.set(itemRef(secB, r, c), withPos(ia, { sec: secB, r, c }));
     else if (ib) batch.delete(itemRef(secB, r, c));
   });
+  // 名前とマス数はBOX（トレー）の属性として中身と一緒に移動する
   const la = state.labels[secA] || null, lb = state.labels[secB] || null;
-  if (lb) batch.set(db.collection('labels').doc(secA), { name: lb });
-  else if (la) batch.delete(db.collection('labels').doc(secA));
-  if (la) batch.set(db.collection('labels').doc(secB), { name: la });
-  else if (lb) batch.delete(db.collection('labels').doc(secB));
+  const sa = state.subs[secA] || null, sb = state.subs[secB] || null;
+  const setBox = (sec, name, sub) => batch.set(db.collection('labels').doc(sec),
+    { name: name || FV().delete(), sub: sub || FV().delete() }, { merge: true });
+  setBox(secA, lb, sb);
+  setBox(secB, la, sa);
 }
 function doSwap(secA, secB) {
   if (!db) return;
@@ -1970,7 +2028,7 @@ function execOp(op, dir) { // dir: 'redo' | 'undo'
   } else if (op.type === 'label') {
     const ref = db.collection('labels').doc(op.sec);
     const val = dir === 'redo' ? op.after : op.before;
-    if (val) batch.set(ref, { name: val }); else batch.delete(ref);
+    batch.set(ref, { name: val || FV().delete() }, { merge: true });
   } else if (op.type === 'swap') {
     buildSwapBatch(batch, op.secA, op.secB); // 現在のstateから組むため自己逆演算（undo/redoとも再入れ替え）
   } else {
@@ -2462,9 +2520,15 @@ function startSync() {
     state.items = m; firstLoaded = true; rerender();
   }, err => showToast('同期エラー: ' + (err.code || err.message)));
   unsubLabels = db.collection('labels').onSnapshot(snap => {
-    const m = {};
-    snap.forEach(doc => { m[doc.id] = doc.data().name; });
-    state.labels = m; rerender();
+    const names = {}, subs = {};
+    snap.forEach(doc => {
+      const d = doc.data();
+      if (d.name) names[doc.id] = d.name;
+      if (d.sub === 9 || d.sub === 10) subs[doc.id] = d.sub;
+    });
+    state.labels = names; state.subs = subs;
+    if (selectMode) exitSelectMode(true);
+    rerender();
   }, () => {});
   unsubPresets = db.collection('meta').doc('presets').onSnapshot(doc => {
     state.presets = (doc.exists && Array.isArray(doc.data().names)) ? doc.data().names : [];
@@ -2483,8 +2547,8 @@ function startSync() {
   // BOXのマス数（9×9 / 10×10）
   unsubConfig = db.collection('meta').doc('config').onSnapshot(doc => {
     const v = (doc.exists && doc.data().sub === 10) ? 10 : 9;
-    if (v !== SUB) {
-      SUB = v;
+    if (v !== defaultSub) {
+      defaultSub = v;
       if (selectMode) exitSelectMode(true);
       cancelMove();
       rerender();
@@ -2579,7 +2643,7 @@ function initFirebase() {
       firstLoaded = false;
       selectMode = false; selected.clear(); moveFrom = null; moveMulti = null;
       swapMode = false; swapFirst = null; updateSwapBtn();
-      SUB = 9; updateGridSizeUI();
+      defaultSub = 9; state.subs = {}; updateGridSizeUI();
       currentRecipeId = null; editingRecipeId = null; editSteps = []; editDirty = false;
       Object.keys(imgCache).forEach(k => delete imgCache[k]);
       undoStack.length = 0; redoStack.length = 0; updateUndoUI();
