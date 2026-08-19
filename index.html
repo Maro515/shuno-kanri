@@ -487,6 +487,34 @@
     background:var(--navy); color:#fff;
   }
 
+  .study-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:0 2px 10px; }
+  .study-full-btn {
+    height:40px; padding:0 15px; border:1px solid var(--line); border-radius:10px;
+    background:var(--card); color:var(--navy); font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .study-full-btn:active { background:#e3ebf3; }
+  .study-full-btn:disabled { opacity:.55; cursor:default; }
+  .study-wrap { border:1px solid var(--line2); border-radius:16px; overflow:hidden; background:#060912; box-shadow:var(--shadow); }
+  .study-frame { display:block; width:100%; border:0; height:calc(100vh - 215px); min-height:520px; background:#060912; }
+  @media (max-width: 600px) { .study-frame { height:calc(100vh - 255px); min-height:460px; } }
+  /* 全画面表示（アプリ内で画面いっぱいに広げる。ホーム画面アプリでも確実に動く） */
+  .study-bar { display:none; }
+  .study-wrap.is-full {
+    position:fixed; inset:0; z-index:70; border:0; border-radius:0; box-shadow:none;
+    display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+  }
+  .study-wrap.is-full .study-bar {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--navy); color:#fff; padding:0 12px; height:44px; flex:0 0 auto;
+    font-size:13.5px; font-weight:800;
+  }
+  .study-wrap.is-full .study-bar button {
+    height:32px; padding:0 13px; border:1px solid rgba(255,255,255,.28); border-radius:9px;
+    background:rgba(255,255,255,.14); color:#fff; font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .study-wrap.is-full .study-frame { flex:1 1 auto; height:auto; min-height:0; }
+
   /* ---------- recipe list ---------- */
   .rc-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; flex-wrap:wrap; }
   .rc-new {
@@ -749,6 +777,7 @@
     <div class="mode-tabs">
       <button class="mode-tab active" id="tab-freezer" onclick="setHomeTab('freezer')">フリーザー管理</button>
       <button class="mode-tab" id="tab-recipes" onclick="setHomeTab('recipes')">手順書一覧</button>
+      <button class="mode-tab" id="tab-study" onclick="setHomeTab('study')">学習</button>
     </div>
 
     <div id="home-freezer">
@@ -783,6 +812,20 @@
       <div class="rc-list" id="rc-list"></div>
     </div>
   </div>
+
+    <div id="home-study" style="display:none">
+      <div class="study-head">
+        <div class="hint" style="margin:0">Webで論文図表を読む作法 ― 論文図表の読み方を体系的に学べる教材です（進捗や履歴は保存されません）。</div>
+        <button class="study-full-btn" id="study-full-btn" onclick="toggleStudyFull(true)" disabled>教材を読み込み中…</button>
+      </div>
+      <div class="study-wrap" id="study-wrap">
+        <div class="study-bar">
+          <span>Webで論文図表を読む作法</span>
+          <button onclick="toggleStudyFull(false)">✕ 全画面を終了</button>
+        </div>
+        <iframe id="study-frame" class="study-frame" title="Webで論文図表を読む作法"></iframe>
+      </div>
+    </div>
 
   <!-- section -->
   <div id="view-section" style="display:none">
@@ -1155,6 +1198,13 @@ function showView(id) {
   ['view-home', 'view-section', 'view-recipe', 'view-recipe-edit'].forEach(v => {
     document.getElementById(v).style.display = (v === id) ? '' : 'none';
   });
+  // 学習ペインは #view-home の外に置いている（全画面表示が transform の影響を受けないため）
+  const st = document.getElementById('home-study');
+  if (st) {
+    const show = (id === 'view-home' && homeTab === 'study');
+    st.style.display = show ? '' : 'none';
+    if (!show) exitStudyFull();
+  }
 }
 function viewVisible(id) { return document.getElementById(id).style.display !== 'none'; }
 
@@ -1169,17 +1219,43 @@ function goHome() {
 }
 
 function setHomeTab(t) {
+  if (t !== 'study') exitStudyFull();
   homeTab = t;
   localStorage.setItem('shuno-tab', t);
   applyHomeTab();
 }
+function markStudyReady() {
+  const b = document.getElementById('study-full-btn');
+  if (b) { b.disabled = false; b.textContent = '全画面で開く'; }
+}
+function toggleStudyFull(on) {
+  const wrap = document.getElementById('study-wrap');
+  if (!wrap) return;
+  if (on) {
+    const f = document.getElementById('study-frame');
+    if (!f.getAttribute('src')) f.setAttribute('src', 'gakushu/index.html');
+  }
+  wrap.classList.toggle('is-full', !!on);
+  document.body.style.overflow = on ? 'hidden' : '';
+}
+function exitStudyFull() { toggleStudyFull(false); }
+
+const HOME_TABS = ['freezer', 'recipes', 'study'];
 function applyHomeTab() {
-  const fz = homeTab === 'freezer';
-  document.getElementById('tab-freezer').classList.toggle('active', fz);
-  document.getElementById('tab-recipes').classList.toggle('active', !fz);
-  document.getElementById('home-freezer').style.display = fz ? '' : 'none';
-  document.getElementById('home-recipes').style.display = fz ? 'none' : '';
-  if (fz) renderHome(); else renderRecipeList();
+  if (!HOME_TABS.includes(homeTab)) homeTab = 'freezer';
+  HOME_TABS.forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', homeTab === t);
+    document.getElementById('home-' + t).style.display = homeTab === t ? '' : 'none';
+  });
+  if (homeTab === 'freezer') renderHome();
+  else if (homeTab === 'recipes') renderRecipeList();
+  else {
+    const f = document.getElementById('study-frame');
+    if (!f.getAttribute('src')) {
+      f.addEventListener('load', markStudyReady, { once: true });
+      f.setAttribute('src', 'gakushu/index.html');   // 初回表示時のみ読み込む
+    }
+  }
 }
 
 function setFreezer(fz) {
@@ -2635,6 +2711,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-bg.show').forEach(m => m.classList.remove('show'));
     closeLightbox();
+    exitStudyFull();
   }
 });
 document.getElementById('re-title').addEventListener('input', () => { editDirty = true; });
@@ -2839,9 +2916,19 @@ window.addEventListener('resize', () => {
 goHome();
 initFirebase();
 
-/* offline support (works when served over http/https; skipped for file://) */
+/* オフライン対応。ただしローカル検証中(localhost)はキャッシュを使わず、
+   既存の Service Worker とキャッシュを解除して常に最新のファイルを読む */
+const IS_LOCAL = ['localhost', '127.0.0.1', '::1', ''].includes(location.hostname);
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (IS_LOCAL) {
+    navigator.serviceWorker.getRegistrations()
+      .then(rs => Promise.all(rs.map(r => r.unregister())))
+      .then(() => window.caches && caches.keys())
+      .then(ks => ks && Promise.all(ks.map(k => caches.delete(k))))
+      .catch(() => {});
+  } else {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 }
 </script>
 </body>

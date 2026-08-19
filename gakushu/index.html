@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Webで論文図表を読む作法 | 論文図表を読む作法PREMIUMで学ぶ</title>
+<meta name="description" content="『論文図表を読む作法PREMIUM』の構成にならい、統計・臨床データ解析の図表を触って学べるインタラクティブ学習サイト" />
+<meta name="theme-color" content="#060912" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="fx-aurora" aria-hidden="true"></div>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div class="fx-grain" aria-hidden="true"></div>
+<div class="app-shell">
+  <header class="topbar">
+    <button class="brand" onclick="location.hash='#/'">
+      <span class="mark">📊</span>
+      <span>Webで論文図表を読む作法<small>論文図表を読む作法 PREMIUM 教材化プロジェクト</small></span>
+    </button>
+    <div class="topbar-spacer"></div>
+    <button class="analyze-btn" onclick="window.APP.openAnalyzer()" aria-label="論文から学ぶ">
+      <span class="a-ico" aria-hidden="true">🔬</span>
+      <span class="a-label">論文から学ぶ</span>
+    </button>
+    <button class="search-btn" onclick="window.APP.openSearch()" aria-label="項目を検索">
+      <span class="s-ico" aria-hidden="true">🔍</span>
+      <span class="s-label">項目を検索</span>
+      <kbd class="s-kbd">⌘K</kbd>
+    </button>
+    <div class="progress-chip" id="topbarProgress"></div>
+  </header>
+  <main><div id="app"></div></main>
+</div>
+
+<script src="js/background.js"></script>
+<script src="js/charts.js"></script>
+<script src="data/index.js"></script>
+<script src="data/ch01.js"></script>
+<script src="data/ch02.js"></script>
+<script src="data/ch03.js"></script>
+<script src="data/ch04.js"></script>
+<script src="data/ch05.js"></script>
+<script src="data/ch06.js"></script>
+<script src="data/ch07.js"></script>
+<script src="data/ch08.js"></script>
+<script src="data/ch09.js"></script>
+<script src="data/ch10.js"></script>
+<script src="data/ch11.js"></script>
+<script src="data/ch12.js"></script>
+<script src="data/ch12-p1.js"></script>
+<script src="data/ch12-p2.js"></script>
+<script src="data/ch12-p3.js"></script>
+<script src="data/ch12-p4.js"></script>
+<script src="data/ch12-p5.js"></script>
+<script src="data/ch12-p6.js"></script>
+<script src="data/explore.js"></script>
+<script src="data/explore-ch12.js"></script>
+<script src="data/explore-ch12b.js"></script>
+<script src="data/deep-ch01.js"></script>
+<script src="data/deep-ch02.js"></script>
+<script src="data/deep-ch03.js"></script>
+<script src="data/deep-ch04.js"></script>
+<script src="data/deep-ch05.js"></script>
+<script src="data/deep-ch05b.js"></script>
+<script src="data/deep-ch06.js"></script>
+<script src="data/deep-ch07.js"></script>
+<script src="data/deep-ch08.js"></script>
+<script src="data/deep-ch08b.js"></script>
+<script src="data/deep-ch09.js"></script>
+<script src="data/deep-ch10.js"></script>
+<script src="data/deep-ch11.js"></script>
+<script src="data/deep-ch12-1.js"></script>
+<script src="data/deep-ch12-2.js"></script>
+<script src="data/deep-ch12-3.js"></script>
+<script src="data/deep-ch12-4.js"></script>
+<script src="data/deep-ch12-5.js"></script>
+<script src="data/deep-ch12-6.js"></script>
+<script src="data/papers-ch01.js"></script>
+<script src="data/papers-ch02.js"></script>
+<script src="data/papers-ch03.js"></script>
+<script src="data/papers-ch04.js"></script>
+<script src="data/papers-ch05.js"></script>
+<script src="data/papers-ch06.js"></script>
+<script src="data/papers-ch07.js"></script>
+<script src="data/papers-ch08a.js"></script>
+<script src="data/papers-ch08b.js"></script>
+<script src="data/papers-ch09.js"></script>
+<script src="data/papers-ch10.js"></script>
+<script src="data/papers-ch11.js"></script>
+<script src="data/papers-ch12.js"></script>
+<script src="data/papers-ch12c.js"></script>
+<script src="data/protocols-ch01.js"></script>
+<script src="data/protocols-ch02.js"></script>
+<script src="data/protocols-ch03.js"></script>
+<script src="data/protocols-ch04.js"></script>
+<script src="data/protocols-ch05.js"></script>
+<script src="data/protocols-ch06.js"></script>
+<script src="data/protocols-ch07.js"></script>
+<script src="data/protocols-ch08a.js"></script>
+<script src="data/protocols-ch08b.js"></script>
+<script src="data/protocols-ch09.js"></script>
+<script src="data/protocols-ch10.js"></script>
+<script src="data/protocols-ch11.js"></script>
+<script src="data/protocols-ch12a.js"></script>
+<script src="data/protocols-ch12b.js"></script>
+<script src="data/protocols-ch12c.js"></script>
+<script src="data/creed-ch01.js"></script>
+<script src="data/creed-ch02.js"></script>
+<script src="data/creed-ch03.js"></script>
+<script src="data/creed-ch04.js"></script>
+<script src="data/creed-ch05.js"></script>
+<script src="data/creed-ch06.js"></script>
+<script src="data/creed-ch07.js"></script>
+<script src="data/creed-ch08a.js"></script>
+<script src="data/creed-ch08b.js"></script>
+<script src="data/creed-ch09.js"></script>
+<script src="data/creed-ch10.js"></script>
+<script src="data/creed-ch11.js"></script>
+<script src="data/creed-ch12a.js"></script>
+<script src="data/creed-ch12b.js"></script>
+<script src="data/creed-ch12c.js"></script>
+<script src="data/methods-syn-a.js"></script>
+<script src="data/methods-syn-b.js"></script>
+<script src="data/methods-syn-c.js"></script>
+<script src="data/methods-syn-d.js"></script>
+<script src="data/methods-syn-e.js"></script>
+<script src="data/methods-syn-f.js"></script>
+<script src="js/widgets-core.js"></script>
+<script src="js/widgets-ch01.js"></script>
+<script src="js/widgets-ch02.js"></script>
+<script src="js/widgets-ch03.js"></script>
+<script src="js/widgets-ch04.js"></script>
+<script src="js/widgets-ch05.js"></script>
+<script src="js/widgets-ch06.js"></script>
+<script src="js/widgets-ch07.js"></script>
+<script src="js/widgets-ch08.js"></script>
+<script src="js/widgets-ch09.js"></script>
+<script src="js/widgets-ch10.js"></script>
+<script src="js/widgets-ch11.js"></script>
+<script src="js/widgets-ch12-1.js"></script>
+<script src="js/widgets-ch12-2.js"></script>
+<script src="js/widgets-ch12-3.js"></script>
+<script src="js/widgets-ch12-4.js"></script>
+<script src="js/widgets-ch12-5.js"></script>
+<script src="js/widgets-ch12-6.js"></script>
+<script src="js/widgets-ch12-7.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
